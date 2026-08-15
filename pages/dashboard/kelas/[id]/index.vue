@@ -1,9 +1,9 @@
-<!-- pages/dashboard/kelas/[id].vue -->
+<!-- pages/dashboard/kelas/[id]/index.vue -->
 <template>
   <ClientOnly>
     <div>
       <!-- Header Navigation -->
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <NuxtLink to="/dashboard" class="text-sm text-brand-600 dark:text-brand-400 hover:underline">← Kembali ke Dashboard</NuxtLink>
           <h1 class="text-2xl font-bold mt-1">Gudang Soal Kelas {{ kelasId }} SD</h1>
@@ -14,6 +14,7 @@
           <select 
             v-if="mapelAjar.length > 0"
             v-model="selectedMapel" 
+            @change="updateUrlQuery"
             class="flex-1 sm:flex-none px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 font-semibold text-sm outline-none focus:ring-2 focus:ring-brand-500"
           >
             <option v-for="m in mapelAjar" :key="m" :value="m">{{ m }}</option>
@@ -29,11 +30,60 @@
 
           <!-- Tombol Buat Soal -->
           <button 
-            @click="showModalTambah = true"
+            @click="bukaModalTambah"
             :disabled="!selectedMapel"
             class="bg-brand-600 hover:bg-brand-700 text-white font-medium px-4 py-2 rounded-xl transition shadow text-sm disabled:opacity-50"
           >
             + Buat Soal
+          </button>
+        </div>
+      </div>
+
+      <!-- Ringkasan Statistik Soal -->
+      <div v-if="mapelAjar.length > 0 && !loadingData" class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <div class="p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+          <p class="text-xs text-slate-500">Total Soal</p>
+          <p class="text-lg font-bold text-slate-800 dark:text-slate-100">{{ stats.total }} Soal</p>
+        </div>
+        <div class="p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+          <p class="text-xs text-slate-500">Pilihan Ganda</p>
+          <p class="text-lg font-bold text-brand-600 dark:text-brand-400">{{ stats.pg }} Soal</p>
+        </div>
+        <div class="p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+          <p class="text-xs text-slate-500">Essay / Uraian</p>
+          <p class="text-lg font-bold text-purple-600 dark:text-purple-400">{{ stats.essay }} Soal</p>
+        </div>
+        <div class="p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+          <p class="text-xs text-slate-500">Belum Dipakai</p>
+          <p class="text-lg font-bold text-emerald-600 dark:text-emerald-400">{{ stats.belumDipakai }} Soal</p>
+        </div>
+      </div>
+
+      <!-- Search & Filter Tipe Soal Bar -->
+      <div v-if="mapelAjar.length > 0 && daftarSoal.length > 0" class="flex flex-col sm:flex-row gap-3 mb-6">
+        <!-- Search Input -->
+        <div class="relative flex-1">
+          <input 
+            v-model="searchQuery"
+            type="text"
+            placeholder="Cari pertanyaan atau teks soal..."
+            class="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:ring-2 focus:ring-brand-500"
+          />
+          <span class="absolute left-3 top-2.5 text-slate-400 text-sm">🔍</span>
+        </div>
+
+        <!-- Filter Tab Tipe Soal -->
+        <div class="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl text-xs font-semibold">
+          <button 
+            v-for="filter in ['semua', 'pg', 'essay']" 
+            :key="filter"
+            @click="filterTipe = filter"
+            :class="[
+              'px-3 py-1.5 rounded-lg capitalize transition',
+              filterTipe === filter ? 'bg-white dark:bg-slate-700 text-brand-600 dark:text-brand-400 shadow-sm' : 'text-slate-500'
+            ]"
+          >
+            {{ filter }}
           </button>
         </div>
       </div>
@@ -52,10 +102,15 @@
         Belum ada soal untuk mata pelajaran <b>{{ selectedMapel }}</b> di Kelas {{ kelasId }}.
       </div>
 
-      <!-- Daftar Soal Pilihan Ganda & Essay -->
+      <!-- State Hasil Pencarian Tidak Ditemukan -->
+      <div v-else-if="filteredSoal.length === 0" class="text-center py-12 text-slate-500 bg-white dark:bg-slate-800 rounded-2xl border">
+        Tidak ditemukan soal yang cocok.
+      </div>
+
+      <!-- Daftar Soal -->
       <div v-else class="space-y-4">
         <div 
-          v-for="(item, index) in daftarSoal" 
+          v-for="(item, index) in filteredSoal" 
           :key="item.id" 
           class="p-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm"
         >
@@ -65,7 +120,6 @@
                 Soal #{{ index + 1 }} - {{ item.mapel }} ({{ item.tipe === 'essay' ? 'Essay' : 'PG' }})
               </span>
 
-              <!-- Status Indikator Pernah Dicetak / Belum -->
               <span v-if="item.dipakai" class="px-2.5 py-1 text-[10px] font-bold rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
                 ⚠️ Pernah Dicetak
               </span>
@@ -74,12 +128,22 @@
               </span>
             </div>
 
-            <button @click="hapusSoal(item.id)" class="text-red-500 hover:text-red-700 text-xs font-medium">Hapus</button>
+            <!-- Tombol Aksi Edit, Duplikat, Hapus -->
+            <div class="flex items-center gap-3">
+              <button @click="duplikatSoal(item)" class="text-slate-500 hover:text-slate-700 font-medium text-xs flex items-center gap-1" title="Gandakan Soal Ini">
+                📋 Duplikat
+              </button>
+              <button @click="bukaModalEdit(item)" class="text-brand-600 hover:text-brand-700 font-medium text-xs flex items-center gap-1">
+                ✏️ Edit
+              </button>
+              <button @click="mintaKonfirmasiHapus(item)" class="text-red-500 hover:text-red-700 font-medium text-xs flex items-center gap-1">
+                🗑️ Hapus
+              </button>
+            </div>
           </div>
 
-          <p class="font-bold text-base mb-3">{{ item.pertanyaan }}</p>
+          <p class="font-bold text-base mb-3 text-slate-800 dark:text-slate-100">{{ item.pertanyaan }}</p>
 
-          <!-- Display Opsi A, B, C, D jika tipe PG -->
           <div v-if="item.tipe !== 'essay'" class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3 text-sm">
             <div 
               v-for="kunci in ['a', 'b', 'c', 'd']" 
@@ -99,12 +163,11 @@
         </div>
       </div>
 
-      <!-- Modal Form Input Soal -->
-      <div v-if="showModalTambah" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
+      <!-- Modal Form Input / Edit Soal -->
+      <div v-if="showModalForm" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
         <div class="bg-white dark:bg-slate-800 w-full max-w-lg p-6 rounded-2xl shadow-xl space-y-4 my-8">
-          <h2 class="text-xl font-bold">Buat Soal Baru ({{ selectedMapel }})</h2>
+          <h2 class="text-xl font-bold">{{ isEditMode ? 'Edit Soal' : 'Buat Soal Baru' }} ({{ selectedMapel }})</h2>
           
-          <!-- Pilihan Tipe Soal -->
           <div>
             <label class="block text-sm font-medium mb-1">Tipe Soal</label>
             <select v-model="formSoal.tipe" class="w-full px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-transparent text-sm">
@@ -123,7 +186,6 @@
             ></textarea>
           </div>
 
-          <!-- Input Opsi Khusus PG -->
           <div v-if="formSoal.tipe === 'pg'" class="space-y-2">
             <label class="block text-sm font-medium">Pilihan Jawaban A, B, C, D:</label>
             <div v-for="kunci in ['a', 'b', 'c', 'd']" :key="kunci" class="flex items-center gap-2">
@@ -142,17 +204,40 @@
           </div>
 
           <div class="flex justify-end gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
-            <button @click="showModalTambah = false" class="px-4 py-2 text-sm text-slate-500 rounded-xl">Batal</button>
-            <button @click="simpanSoal" class="px-5 py-2 text-sm bg-brand-600 text-white font-medium rounded-xl hover:bg-brand-700 shadow">Simpan Soal</button>
+            <button @click="showModalForm = false" class="px-4 py-2 text-sm text-slate-500 rounded-xl">Batal</button>
+            <button @click="simpanSoal" class="px-5 py-2 text-sm bg-brand-600 text-white font-medium rounded-xl hover:bg-brand-700 shadow">
+              {{ isEditMode ? 'Simpan Perubahan' : 'Tambah Soal' }}
+            </button>
           </div>
         </div>
       </div>
+
+      <!-- Modal Konfirmasi Hapus Soal -->
+      <div v-if="showModalHapus" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white dark:bg-slate-800 w-full max-w-sm p-6 rounded-2xl shadow-xl space-y-4 text-center">
+          <div class="w-12 h-12 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">⚠️</div>
+          <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100">Hapus Soal Ini?</h3>
+          <p class="text-xs text-slate-500 leading-relaxed">
+            Soal <b>"{{ targetHapusSoal?.pertanyaan }}"</b> akan dihapus secara permanen dari gudang soal.
+          </p>
+
+          <div class="flex justify-center gap-2 pt-2">
+            <button @click="showModalHapus = false" class="flex-1 px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 rounded-xl hover:bg-slate-200">
+              Batal
+            </button>
+            <button @click="eksekusiHapusSoal" class="flex-1 px-4 py-2 text-xs font-semibold text-white bg-red-600 rounded-xl hover:bg-red-700 shadow">
+              Ya, Hapus
+            </button>
+          </div>
+        </div>
+      </div>
+
     </div>
   </ClientOnly>
 </template>
 
 <script setup>
-import { collection, addDoc, query, where, getDocs, deleteDoc, doc, getDoc } from 'firebase/firestore'
+import { collection, addDoc, updateDoc, query, where, getDocs, deleteDoc, doc, getDoc } from 'firebase/firestore'
 
 definePageMeta({ 
   middleware: 'auth',
@@ -160,6 +245,7 @@ definePageMeta({
 })
 
 const route = useRoute()
+const router = useRouter()
 const kelasId = route.params.id
 const { db } = useFirebase()
 const { user, initAuth } = useAuth()
@@ -168,7 +254,15 @@ const mapelAjar = ref([])
 const selectedMapel = ref('')
 const daftarSoal = ref([])
 const loadingData = ref(true)
-const showModalTambah = ref(false)
+
+// State Search & Filter Tipe
+const searchQuery = ref('')
+const filterTipe = ref('semua')
+
+// State Modal Form (Tambah & Edit)
+const showModalForm = ref(false)
+const isEditMode = ref(false)
+const editSoalId = ref(null)
 
 const formSoal = ref({
   tipe: 'pg',
@@ -177,6 +271,41 @@ const formSoal = ref({
   kunciJawaban: 'a'
 })
 
+// State Modal Konfirmasi Hapus
+const showModalHapus = ref(false)
+const targetHapusSoal = ref(null)
+
+// Computed Statistik Soal
+const stats = computed(() => {
+  const total = daftarSoal.value.length
+  const pg = daftarSoal.value.filter(s => s.tipe !== 'essay').length
+  const essay = daftarSoal.value.filter(s => s.tipe === 'essay').length
+  const belumDipakai = daftarSoal.value.filter(s => !s.dipakai).length
+  return { total, pg, essay, belumDipakai }
+})
+
+// Computed Filter Soal (Search + Tipe)
+const filteredSoal = computed(() => {
+  return daftarSoal.value.filter(item => {
+    // Filter Tipe
+    if (filterTipe.value === 'pg' && item.tipe === 'essay') return false
+    if (filterTipe.value === 'essay' && item.tipe !== 'essay') return false
+    
+    // Filter Teks Pencarian
+    if (searchQuery.value.trim()) {
+      const q = searchQuery.value.toLowerCase()
+      return item.pertanyaan?.toLowerCase().includes(q)
+    }
+    return true
+  })
+})
+
+const updateUrlQuery = () => {
+  router.replace({
+    query: { ...route.query, mapel: selectedMapel.value }
+  })
+}
+
 const loadPengaturanGuru = async () => {
   if (!user.value) return
   try {
@@ -184,8 +313,13 @@ const loadPengaturanGuru = async () => {
     const docSnap = await getDoc(docRef)
     if (docSnap.exists()) {
       mapelAjar.value = docSnap.data().mapelAjar || []
-      if (mapelAjar.value.length > 0 && !selectedMapel.value) {
+      
+      const queryMapel = route.query.mapel
+      if (queryMapel && mapelAjar.value.includes(queryMapel)) {
+        selectedMapel.value = queryMapel
+      } else if (mapelAjar.value.length > 0) {
         selectedMapel.value = mapelAjar.value[0]
+        updateUrlQuery()
       }
     }
   } catch (e) {
@@ -215,8 +349,49 @@ const loadSoal = async () => {
   }
 }
 
+// Handler Buka Form Modal
+const bukaModalTambah = () => {
+  isEditMode.value = false
+  editSoalId.value = null
+  formSoal.value = {
+    tipe: 'pg',
+    pertanyaan: '',
+    opsi: { a: '', b: '', c: '', d: '' },
+    kunciJawaban: 'a'
+  }
+  showModalForm.value = true
+}
+
+const bukaModalEdit = (soal) => {
+  isEditMode.value = true
+  editSoalId.value = soal.id
+  formSoal.value = {
+    tipe: soal.tipe || 'pg',
+    pertanyaan: soal.pertanyaan || '',
+    opsi: soal.opsi ? { ...soal.opsi } : { a: '', b: '', c: '', d: '' },
+    kunciJawaban: soal.kunciJawaban || 'a'
+  }
+  showModalForm.value = true
+}
+
+// Fitur Kloning / Duplikat Soal
+const duplikatSoal = (soal) => {
+  isEditMode.value = false
+  editSoalId.value = null
+  formSoal.value = {
+    tipe: soal.tipe || 'pg',
+    pertanyaan: `${soal.pertanyaan} (Salinan)`,
+    opsi: soal.opsi ? { ...soal.opsi } : { a: '', b: '', c: '', d: '' },
+    kunciJawaban: soal.kunciJawaban || 'a'
+  }
+  showModalForm.value = true
+}
+
+// Simpan atau Update Soal di Firestore
 const simpanSoal = async () => {
-  if (!formSoal.value.pertanyaan) {
+  const pertanyaanClean = formSoal.value.pertanyaan.trim()
+
+  if (!pertanyaanClean) {
     alert('Harap isi pertanyaan!')
     return
   }
@@ -225,39 +400,64 @@ const simpanSoal = async () => {
     return
   }
 
+  // Cegatan Soal Duplikat
+  const isDuplicate = daftarSoal.value.some(s => {
+    if (isEditMode.value && s.id === editSoalId.value) return false
+    return s.pertanyaan.trim().toLowerCase() === pertanyaanClean.toLowerCase()
+  })
+
+  if (isDuplicate) {
+    alert('⚠️ Pertanyaan soal ini sudah ada di daftar!')
+    return
+  }
+
   try {
-    await addDoc(collection(db, 'soal'), {
+    const dataPayload = {
       userId: user.value.uid,
       kelas: Number(kelasId),
       mapel: selectedMapel.value,
       tipe: formSoal.value.tipe,
-      pertanyaan: formSoal.value.pertanyaan,
+      pertanyaan: pertanyaanClean,
       opsi: formSoal.value.tipe === 'pg' ? formSoal.value.opsi : null,
       kunciJawaban: formSoal.value.tipe === 'pg' ? formSoal.value.kunciJawaban : null,
-      dipakai: false,
-      createdAt: new Date()
-    })
+      updatedAt: new Date()
+    }
+
+    if (isEditMode.value && editSoalId.value) {
+      await updateDoc(doc(db, 'soal', editSoalId.value), dataPayload)
+    } else {
+      dataPayload.dipakai = false
+      dataPayload.createdAt = new Date()
+      await addDoc(collection(db, 'soal'), dataPayload)
+    }
     
-    // Reset Form
-    formSoal.value.tipe = 'pg'
-    formSoal.value.pertanyaan = ''
-    formSoal.value.opsi = { a: '', b: '', c: '', d: '' }
-    formSoal.value.kunciJawaban = 'a'
-    showModalTambah.value = false
+    showModalForm.value = false
     await loadSoal()
   } catch (e) {
     console.error('Gagal menyimpan soal:', e)
   }
 }
 
-const hapusSoal = async (id) => {
-  if (confirm('Hapus soal ini dari gudang?')) {
-    await deleteDoc(doc(db, 'soal', id))
+// Handler Konfirmasi Hapus
+const mintaKonfirmasiHapus = (soal) => {
+  targetHapusSoal.value = soal
+  showModalHapus.value = true
+}
+
+const eksekusiHapusSoal = async () => {
+  if (!targetHapusSoal.value) return
+  try {
+    await deleteDoc(doc(db, 'soal', targetHapusSoal.value.id))
+    showModalHapus.value = false
+    targetHapusSoal.value = null
     await loadSoal()
+  } catch (e) {
+    console.error('Gagal menghapus soal:', e)
   }
 }
 
 watch(selectedMapel, () => {
+  searchQuery.value = ''
   if (selectedMapel.value) loadSoal()
 })
 
