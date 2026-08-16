@@ -9,17 +9,36 @@
           <h1 class="text-2xl font-bold mt-1">🖨️ Generator Cetak Ujian - Kelas {{ kelasId }} SD</h1>
         </div>
         
-        <div class="flex items-center gap-2">
-          <select v-model="selectedMapel" class="px-3 py-2 border rounded-xl bg-white dark:bg-slate-800 text-sm font-semibold">
+        <div class="flex items-center gap-2 w-full md:w-auto">
+          <select v-model="selectedMapel" class="px-3 py-2 border rounded-xl bg-white dark:bg-slate-800 text-sm font-semibold flex-1 md:flex-none">
             <option v-for="m in mapelAjar" :key="m" :value="m">{{ m }}</option>
           </select>
           <button 
             @click="bukaKertasCetak" 
             :disabled="terpilihPG.length === 0 && terpilihEssay.length === 0" 
-            class="bg-brand-600 hover:bg-brand-700 text-white px-5 py-2 rounded-xl text-sm font-semibold shadow disabled:opacity-50 transition"
+            class="bg-brand-600 hover:bg-brand-700 text-white px-5 py-2 rounded-xl text-sm font-semibold shadow disabled:opacity-50 transition whitespace-nowrap"
           >
-            🖨️ Cetak Lembar Ujian ({{ terpilihPG.length + terpilihEssay.length }} Soal)
+            🖨️ Pratinjau & Cetak ({{ terpilihPG.length + terpilihEssay.length }} Soal)
           </button>
+        </div>
+      </div>
+
+      <!-- Pengaturan Identitas Ujian (KOP Surat) -->
+      <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-3">
+        <h3 class="text-xs font-bold uppercase text-slate-500 tracking-wider">Pengaturan Header & KOP Ujian</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+          <div>
+            <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Nama Sekolah</label>
+            <input v-model="infoUjian.namaSekolah" type="text" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-transparent text-sm" placeholder="SD NEGERI UTAMA" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Nama Ujian</label>
+            <input v-model="infoUjian.namaUjian" type="text" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-transparent text-sm" placeholder="Penilaian Tengah Semester (PTS)" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Tahun Ajaran</label>
+            <input v-model="infoUjian.tahunAjaran" type="text" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-transparent text-sm" placeholder="2025/2026" />
+          </div>
         </div>
       </div>
 
@@ -41,12 +60,17 @@
               placeholder="Jumlah PG (Misal: 15)" 
             />
           </div>
-          <div class="flex gap-2 pt-1">
-            <button @click="pilihSemuaDenganLimit('pg')" class="flex-1 py-1.5 bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-300 border border-brand-200 dark:border-brand-800 rounded-lg text-xs font-semibold hover:bg-brand-100">
-              ✅ Pilih Semua (Maks {{ targetJumlahPG }})
-            </button>
-            <button @click="pilihAcak('pg')" class="flex-1 py-1.5 bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 border border-purple-200 dark:border-purple-800 rounded-lg text-xs font-semibold hover:bg-purple-100">
-              🎲 Acak ({{ targetJumlahPG }} Soal)
+          <div class="flex flex-col gap-1.5 pt-1">
+            <div class="flex gap-2">
+              <button @click="pilihSemuaDenganLimit('pg')" class="flex-1 py-1.5 bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-300 border border-brand-200 dark:border-brand-800 rounded-lg text-xs font-semibold hover:bg-brand-100">
+                ✅ Urut (Maks {{ targetJumlahPG }})
+              </button>
+              <button @click="pilihAcak('pg')" class="flex-1 py-1.5 bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 border border-purple-200 dark:border-purple-800 rounded-lg text-xs font-semibold hover:bg-purple-100">
+                🎲 Acak ({{ targetJumlahPG }} Soal)
+              </button>
+            </div>
+            <button @click="pilihHanyaBelumDipakai('pg')" class="w-full py-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded-lg text-xs font-semibold hover:bg-emerald-100">
+              ✨ Prioritaskan Soal Belum Pernah Dipakai
             </button>
           </div>
         </div>
@@ -67,21 +91,34 @@
               placeholder="Jumlah Essay (Misal: 5)" 
             />
           </div>
-          <div class="flex gap-2 pt-1">
-            <button @click="pilihSemuaDenganLimit('essay')" class="flex-1 py-1.5 bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-300 border border-brand-200 dark:border-brand-800 rounded-lg text-xs font-semibold hover:bg-brand-100">
-              ✅ Pilih Semua (Maks {{ targetJumlahEssay }})
-            </button>
-            <button @click="pilihAcak('essay')" class="flex-1 py-1.5 bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 border border-purple-200 dark:border-purple-800 rounded-lg text-xs font-semibold hover:bg-purple-100">
-              🎲 Acak ({{ targetJumlahEssay }} Soal)
+          <div class="flex flex-col gap-1.5 pt-1">
+            <div class="flex gap-2">
+              <button @click="pilihSemuaDenganLimit('essay')" class="flex-1 py-1.5 bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-300 border border-brand-200 dark:border-brand-800 rounded-lg text-xs font-semibold hover:bg-brand-100">
+                ✅ Urut (Maks {{ targetJumlahEssay }})
+              </button>
+              <button @click="pilihAcak('essay')" class="flex-1 py-1.5 bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 border border-purple-200 dark:border-purple-800 rounded-lg text-xs font-semibold hover:bg-purple-100">
+                🎲 Acak ({{ targetJumlahEssay }} Soal)
+              </button>
+            </div>
+            <button @click="pilihHanyaBelumDipakai('essay')" class="w-full py-1.5 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded-lg text-xs font-semibold hover:bg-emerald-100">
+              ✨ Prioritaskan Soal Belum Pernah Dipakai
             </button>
           </div>
         </div>
       </div>
 
-      <!-- Tombol Clear / Reset -->
-      <div class="flex justify-between items-center text-xs">
-        <span class="text-slate-500">Total soal terpilih saat ini: <b>{{ terpilihPG.length }} PG</b> dan <b>{{ terpilihEssay.length }} Essay</b></span>
-        <button @click="resetPilihan" class="text-red-500 hover:underline font-semibold">Clear Semua Pilihan</button>
+      <!-- Baris Pencarian & Clear All -->
+      <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
+        <input 
+          v-model="searchQuery" 
+          type="text" 
+          placeholder="🔍 Cari teks soal..." 
+          class="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs w-full sm:w-64 outline-none focus:ring-2 focus:ring-brand-500"
+        />
+        <div class="flex items-center justify-between sm:justify-end gap-4 text-xs">
+          <span class="text-slate-500">Total terpilih: <b>{{ terpilihPG.length }} PG</b> & <b>{{ terpilihEssay.length }} Essay</b></span>
+          <button @click="resetPilihan" class="text-red-500 hover:underline font-semibold">Clear Semua Pilihan</button>
+        </div>
       </div>
 
       <!-- Tab Jenis Soal -->
@@ -96,8 +133,9 @@
 
       <!-- Daftar Soal PG -->
       <div v-if="activeTab === 'pg'" class="space-y-3">
+        <div v-if="filteredListPG.length === 0" class="text-center py-8 text-slate-400 text-xs bg-white dark:bg-slate-800 rounded-xl border">Tidak ada soal PG yang sesuai.</div>
         <div 
-          v-for="soal in listSoalPG" 
+          v-for="soal in filteredListPG" 
           :key="soal.id" 
           :class="['p-4 rounded-xl border transition flex items-start gap-4 cursor-pointer', terpilihPG.includes(soal.id) ? 'border-brand-500 bg-brand-50/50 dark:bg-brand-900/20' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700']" 
           @click="togglePilih(soal.id, 'pg')"
@@ -115,8 +153,9 @@
 
       <!-- Daftar Soal Essay -->
       <div v-if="activeTab === 'essay'" class="space-y-3">
+        <div v-if="filteredListEssay.length === 0" class="text-center py-8 text-slate-400 text-xs bg-white dark:bg-slate-800 rounded-xl border">Tidak ada soal Essay yang sesuai.</div>
         <div 
-          v-for="soal in listSoalEssay" 
+          v-for="soal in filteredListEssay" 
           :key="soal.id" 
           :class="['p-4 rounded-xl border transition flex items-start gap-4 cursor-pointer', terpilihEssay.includes(soal.id) ? 'border-brand-500 bg-brand-50/50 dark:bg-brand-900/20' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700']" 
           @click="togglePilih(soal.id, 'essay')"
@@ -156,28 +195,54 @@ const terpilihEssay = ref([])
 
 const targetJumlahPG = ref(15)
 const targetJumlahEssay = ref(5)
+const searchQuery = ref('')
+
+const infoUjian = ref({
+  namaSekolah: 'SD NEGERI UTAMA',
+  namaUjian: 'Penilaian Tengah Semester (PTS)',
+  tahunAjaran: '2025/2026'
+})
+
+// Filtered List berdasarkan kata kunci pencarian
+const filteredListPG = computed(() => {
+  if (!searchQuery.value.trim()) return listSoalPG.value
+  return listSoalPG.value.filter(s => s.pertanyaan.toLowerCase().includes(searchQuery.value.toLowerCase()))
+})
+
+const filteredListEssay = computed(() => {
+  if (!searchQuery.value.trim()) return listSoalEssay.value
+  return listSoalEssay.value.filter(s => s.pertanyaan.toLowerCase().includes(searchQuery.value.toLowerCase()))
+})
 
 const loadPengaturan = async () => {
   if (!user.value) return
-  const docSnap = await getDoc(doc(db, 'pengaturanGuru', user.value.uid))
-  if (docSnap.exists()) {
-    mapelAjar.value = docSnap.data().mapelAjar || []
-    if (mapelAjar.value.length > 0) selectedMapel.value = mapelAjar.value[0]
+  try {
+    const docSnap = await getDoc(doc(db, 'pengaturanGuru', user.value.uid))
+    if (docSnap.exists()) {
+      mapelAjar.value = docSnap.data().mapelAjar || []
+      if (mapelAjar.value.length > 0) selectedMapel.value = mapelAjar.value[0]
+    }
+  } catch (e) {
+    console.error('Gagal memuat pengaturan:', e)
   }
 }
 
 const loadSoal = async () => {
   if (!user.value || !selectedMapel.value) return
-  const q = query(
-    collection(db, 'soal'),
-    where('userId', '==', user.value.uid),
-    where('kelas', '==', kelasId),
-    where('mapel', '==', selectedMapel.value)
-  )
-  const snap = await getDocs(q)
-  const all = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-  listSoalPG.value = all.filter(s => s.tipe !== 'essay')
-  listSoalEssay.value = all.filter(s => s.tipe === 'essay')
+  try {
+    const q = query(
+      collection(db, 'soal'),
+      where('userId', '==', user.value.uid),
+      where('kelas', '==', kelasId),
+      where('mapel', '==', selectedMapel.value)
+    )
+    const snap = await getDocs(q)
+    const all = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    listSoalPG.value = all.filter(s => s.tipe !== 'essay')
+    listSoalEssay.value = all.filter(s => s.tipe === 'essay')
+  } catch (e) {
+    console.error('Gagal memuat soal:', e)
+  }
 }
 
 const togglePilih = (id, tipe) => {
@@ -188,26 +253,22 @@ const togglePilih = (id, tipe) => {
     target.value = target.value.filter(item => item !== id)
   } else {
     if (target.value.length >= limit) {
-      alert(`Batas maksimum pemilihan untuk tipe ini adalah ${limit} soal (sesuai input target).`)
+      alert(`Batas maksimum pemilihan untuk tipe ini adalah ${limit} soal. Silakan naikkan input target jika ingin memilih lebih banyak.`)
       return
     }
     target.value.push(id)
   }
 }
 
-// Fitur Pilih Semua (Dibatasi oleh Input Target)
 const pilihSemuaDenganLimit = (tipe) => {
   const list = tipe === 'pg' ? listSoalPG.value : listSoalEssay.value
   const limit = tipe === 'pg' ? targetJumlahPG.value : targetJumlahEssay.value
-
-  // Ambil sebanyak target batas limit
   const selectedIds = list.slice(0, limit).map(s => s.id)
 
   if (tipe === 'pg') terpilihPG.value = selectedIds
   else terpilihEssay.value = selectedIds
 }
 
-// Fitur Pilih Acak (Dibatasi oleh Input Target)
 const pilihAcak = (tipe) => {
   const list = tipe === 'pg' ? listSoalPG.value : listSoalEssay.value
   const limit = tipe === 'pg' ? targetJumlahPG.value : targetJumlahEssay.value
@@ -219,17 +280,31 @@ const pilihAcak = (tipe) => {
   else terpilihEssay.value = selectedIds
 }
 
+// Fitur Baru: Prioritaskan Soal Belum Pernah Dipakai
+const pilihHanyaBelumDipakai = (tipe) => {
+  const list = tipe === 'pg' ? listSoalPG.value : listSoalEssay.value
+  const limit = tipe === 'pg' ? targetJumlahPG.value : targetJumlahEssay.value
+
+  // Prioritaskan yang belum dipakai (dipakai == false/undefined)
+  const sortedByUnused = [...list].sort((a, b) => (a.dipakai === b.dipakai ? 0 : a.dipakai ? 1 : -1))
+  const selectedIds = sortedByUnused.slice(0, limit).map(s => s.id)
+
+  if (tipe === 'pg') terpilihPG.value = selectedIds
+  else terpilihEssay.value = selectedIds
+}
+
 const resetPilihan = () => {
   terpilihPG.value = []
   terpilihEssay.value = []
 }
 
 const bukaKertasCetak = async () => {
-  // 1. Langsung buka window baru (Mencegah Popup Blocker Browser)
+  // 1. Langsung buka window baru (Mencegah Popup Blocker)
   const printWindow = window.open('', '_blank')
 
-  // 2. Simpan payload data pilihan ke LocalStorage
+  // 2. Simpan payload data pilihan + Info KOP ke LocalStorage
   const printData = {
+    infoUjian: infoUjian.value,
     kelas: kelasId,
     mapel: selectedMapel.value,
     pg: listSoalPG.value.filter(s => terpilihPG.value.includes(s.id)),
@@ -237,25 +312,34 @@ const bukaKertasCetak = async () => {
   }
   localStorage.setItem('teachbank_print_payload', JSON.stringify(printData))
 
-  // 3. Arahkan window yang baru dibuka ke halaman print
+  // 3. Arahkan window baru ke halaman cetak
   if (printWindow) {
     printWindow.location.href = `/dashboard/kelas/${kelasId}/print`
   }
 
-  // 4. Update status dokumen di Firestore (di background tanpa menahan window)
-  const ids = [...terpilihPG.value, ...terpilihEssay.value]
-  for (const id of ids) {
-    updateDoc(doc(db, 'soal', id), { dipakai: true, terakhirDipakai: new Date() })
+  // 4. Update status dokumen di Firestore secara aman dengan Promise.all
+  try {
+    const ids = [...terpilihPG.value, ...terpilihEssay.value]
+    const updatePromises = ids.map(id => 
+      updateDoc(doc(db, 'soal', id), { 
+        dipakai: true, 
+        terakhirDipakai: new Date() 
+      })
+    )
+    await Promise.all(updatePromises)
+  } catch (e) {
+    console.error('Gagal memperbarui status soal di Firestore:', e)
   }
 }
 
 watch(selectedMapel, () => {
   resetPilihan()
+  searchQuery.value = ''
   loadSoal()
 })
 
 onMounted(async () => {
   await loadPengaturan()
-  loadSoal()
+  await loadSoal()
 })
 </script>
