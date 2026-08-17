@@ -275,6 +275,15 @@
             <p class="font-medium text-sm text-slate-800 dark:text-slate-100">
               {{ soal.pertanyaan }}
             </p>
+
+            <!-- Menampilkan Gambar Soal PG (Jika Ada) -->
+            <div v-if="soal.imageUrl" class="mt-2">
+              <img
+                :src="soal.imageUrl"
+                alt="Gambar Soal"
+                class="max-h-40 object-contain rounded-lg border border-slate-200 dark:border-slate-700 p-1 bg-white"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -319,6 +328,15 @@
             <p class="font-medium text-sm text-slate-800 dark:text-slate-100">
               {{ soal.pertanyaan }}
             </p>
+
+            <!-- Menampilkan Gambar Soal Essay (Jika Ada) -->
+            <div v-if="soal.imageUrl" class="mt-2">
+              <img
+                :src="soal.imageUrl"
+                alt="Gambar Soal"
+                class="max-h-40 object-contain rounded-lg border border-slate-200 dark:border-slate-700 p-1 bg-white"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -347,7 +365,6 @@ const { user } = useAuth();
 
 const activeTab = ref("pg");
 const mapelAjar = ref([]);
-// Inisialisasi awal mengambil dari query URL jika ada
 const selectedMapel = ref(route.query.mapel || "");
 const listSoalPG = ref([]);
 const listSoalEssay = ref([]);
@@ -366,8 +383,6 @@ const loadPengaturan = async () => {
     if (docSnap.exists()) {
       mapelAjar.value = docSnap.data().mapelAjar || [];
 
-      // PERBAIKAN DI SINI:
-      // Prioritaskan mapel yang ada di URL Query. Jika tidak ada, baru gunakan mapel pertama.
       const mapelDariUrl = route.query.mapel;
       if (mapelDariUrl && mapelAjar.value.includes(mapelDariUrl)) {
         selectedMapel.value = mapelDariUrl;
@@ -380,10 +395,8 @@ const loadPengaturan = async () => {
   }
 };
 
-// PERBAIKAN PADA WATCH: Update URL Query saat guru mengganti dropdown mapel
 watch(selectedMapel, (newMapel) => {
   if (newMapel) {
-    // Sinkronkan ke URL tanpa mereload halaman
     router.replace({
       query: { ...route.query, mapel: newMapel },
     });
@@ -400,7 +413,6 @@ const infoUjian = ref({
   tahunAjaran: "2025/2026",
 });
 
-// Filtered List berdasarkan kata kunci pencarian
 const filteredListPG = computed(() => {
   if (!searchQuery.value.trim()) return listSoalPG.value;
   return listSoalPG.value.filter((s) =>
@@ -470,12 +482,10 @@ const pilihAcak = (tipe) => {
   else terpilihEssay.value = selectedIds;
 };
 
-// Fitur Baru: Prioritaskan Soal Belum Pernah Dipakai
 const pilihHanyaBelumDipakai = (tipe) => {
   const list = tipe === "pg" ? listSoalPG.value : listSoalEssay.value;
   const limit = tipe === "pg" ? targetJumlahPG.value : targetJumlahEssay.value;
 
-  // Prioritaskan yang belum dipakai (dipakai == false/undefined)
   const sortedByUnused = [...list].sort((a, b) =>
     a.dipakai === b.dipakai ? 0 : a.dipakai ? 1 : -1,
   );
@@ -491,10 +501,9 @@ const resetPilihan = () => {
 };
 
 const bukaKertasCetak = async () => {
-  // 1. Langsung buka window baru (Mencegah Popup Blocker)
   const printWindow = window.open("", "_blank");
 
-  // 2. Simpan payload data pilihan + Info KOP ke LocalStorage
+  // Memastikan seluruh objek data soal (termasuk imageUrl) terkirim ke halaman print
   const printData = {
     infoUjian: infoUjian.value,
     kelas: kelasId,
@@ -506,12 +515,10 @@ const bukaKertasCetak = async () => {
   };
   localStorage.setItem("teachbank_print_payload", JSON.stringify(printData));
 
-  // 3. Arahkan window baru ke halaman cetak
   if (printWindow) {
     printWindow.location.href = `/dashboard/kelas/${kelasId}/print`;
   }
 
-  // 4. Update status dokumen di Firestore secara aman dengan Promise.all
   try {
     const ids = [...terpilihPG.value, ...terpilihEssay.value];
     const updatePromises = ids.map((id) =>

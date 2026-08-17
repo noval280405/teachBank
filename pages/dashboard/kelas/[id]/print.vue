@@ -81,12 +81,23 @@
             <div 
               v-for="(soal, index) in printData.pg" 
               :key="soal.id" 
-              class="break-inside-avoid mb-3 text-xs leading-snug"
+              class="break-inside-avoid mb-4 text-xs leading-snug"
             >
-              <!-- Pertanyaan dengan Flexbox agar Nomor 10+ Tidak Terpotong -->
+              <!-- Pertanyaan -->
               <div class="flex items-start gap-1.5 font-medium">
                 <span class="font-bold w-6 shrink-0 text-right">{{ index + 1 }}.</span>
-                <p class="flex-1 text-slate-900">{{ soal.pertanyaan }}</p>
+                <div class="flex-1 text-slate-900">
+                  <p>{{ soal.pertanyaan }}</p>
+
+                  <!-- Gambar Soal PG (Jika Ada) -->
+                  <div v-if="soal.imageUrl" class="my-2">
+                    <img 
+                      :src="soal.imageUrl" 
+                      alt="Gambar Soal" 
+                      class="max-h-40 max-w-full object-contain rounded border border-slate-200 print:border-black p-0.5"
+                    />
+                  </div>
+                </div>
               </div>
 
               <!-- Pilihan Jawaban A-D -->
@@ -111,8 +122,20 @@
             >
               <div class="flex items-start gap-1.5 font-medium">
                 <span class="font-bold w-6 shrink-0 text-right">{{ (printData.pg?.length || 0) + index + 1 }}.</span>
-                <p class="flex-1 text-slate-900">{{ soal.pertanyaan }}</p>
+                <div class="flex-1 text-slate-900">
+                  <p>{{ soal.pertanyaan }}</p>
+
+                  <!-- Gambar Soal Essay (Jika Ada) -->
+                  <div v-if="soal.imageUrl" class="my-2">
+                    <img 
+                      :src="soal.imageUrl" 
+                      alt="Gambar Soal Essay" 
+                      class="max-h-48 max-w-full object-contain rounded border border-slate-200 print:border-black p-0.5"
+                    />
+                  </div>
+                </div>
               </div>
+
               <!-- Garis Tempat Jawaban Siswa -->
               <div class="pl-7 mt-2 space-y-2">
                 <div class="border-b border-dotted border-slate-400 h-4 w-full"></div>
@@ -148,7 +171,16 @@
               class="text-xs p-2 border border-slate-200 rounded bg-slate-50 print:bg-transparent"
             >
               <p class="font-bold">Soal #{{ (printData.pg?.length || 0) + index + 1 }}:</p>
-              <p class="italic text-slate-700 print:text-black">{{ soal.kunciJawaban || 'Kebijakan guru dalam memberikan skor.' }}</p>
+              <p class="italic text-slate-700 print:text-black mb-1">{{ soal.kunciJawaban || 'Kebijakan guru dalam memberikan skor.' }}</p>
+
+              <!-- Referensi Gambar Soal pada Kunci Jawaban -->
+              <div v-if="soal.imageUrl" class="mt-1">
+                <img 
+                  :src="soal.imageUrl" 
+                  alt="Referensi Gambar" 
+                  class="max-h-24 object-contain rounded border border-slate-200 p-0.5"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -210,6 +242,13 @@ onMounted(() => {
   .break-before-page {
     break-before: page !important;
     page-break-before: always !important;
+  }
+
+  /* Memastikan gambar tidak terdistorsi saat diprint */
+  img {
+    max-width: 100% !important;
+    height: auto !important;
+    page-break-inside: avoid !important;
   }
 }
 </style>
