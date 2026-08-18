@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 260">
+  <rect width="480" height="260" rx="24" fill="#f0f9ff"/>
+  <rect x="120" y="55" width="240" height="150" rx="4" fill="#bae6fd" stroke="#0369a1" stroke-width="5"/>
+  <path d="M120 222h240M102 205V55" stroke="#64748b" stroke-width="2" stroke-dasharray="7 6"/>
+  <text x="220" y="242" font-family="Arial" font-size="20" font-weight="700" fill="#075985">12 cm</text>
+  <text x="48" y="137" font-family="Arial" font-size="20" font-weight="700" fill="#075985" transform="rotate(-90 48 137)">8 cm</text>
+  <text x="184" y="140" font-family="Arial" font-size="22" font-weight="700" fill="#0369a1">Persegi Panjang</text>
+</svg>

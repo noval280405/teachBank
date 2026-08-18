@@ -79,7 +79,7 @@
     <!-- Search & Filter Tipe Soal Bar -->
     <ClientOnly>
       <div
-        v-if="mapelAjar.length > 0 && daftarSoal.length > 0"
+        v-if="mapelAjar.length > 0"
         class="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:flex-row"
       >
         <div class="relative flex-1">
@@ -109,6 +109,8 @@
             {{ filter }}
           </button>
         </div>
+        <select v-model="filterKesulitan" class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold outline-none dark:border-slate-700 dark:bg-slate-900/50"><option value="semua">Semua level</option><option value="mudah">Mudah</option><option value="sedang">Sedang</option><option value="sulit">Sulit</option></select>
+        <div class="flex gap-1"><button @click="downloadTemplateExcel" class="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-100" title="Unduh template Excel"><AppIcon name="file" class="h-3.5 w-3.5" />Template</button><button @click="$refs.csvInput.click()" class="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold text-brand-600 hover:bg-brand-50"><AppIcon name="plus" class="h-3.5 w-3.5" />Import</button><button @click="exportExcel" :disabled="!daftarSoal.length" class="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold text-emerald-600 hover:bg-emerald-50 disabled:opacity-40"><AppIcon name="save" class="h-3.5 w-3.5" />Export</button><input ref="csvInput" type="file" accept=".xlsx,.xls,.csv,text/csv" class="hidden" @change="importSpreadsheet" /></div>
       </div>
     </ClientOnly>
 
@@ -163,6 +165,7 @@
                 item.tipe === "essay" ? "Essay" : "PG"
               }})
             </span>
+            <span :class="['rounded-full px-2.5 py-1 text-[10px] font-bold capitalize', difficultyClass(item.tingkatKesulitan)]">{{ item.tingkatKesulitan || 'sedang' }}</span>
 
             <span
               v-if="item.dipakai"
@@ -201,9 +204,8 @@
           </div>
         </div>
 
-        <p class="font-bold text-base mb-3 text-slate-800 dark:text-slate-100">
-          {{ item.pertanyaan }}
-        </p>
+        <MathText :text="item.pertanyaan" tag="p" class="font-bold text-base mb-3 text-slate-800 dark:text-slate-100" />
+        <p class="mb-3 text-[11px] text-slate-400">Dicetak {{ penggunaanSetahun(item) }} kali dalam 1 tahun terakhir · {{ item.jumlahDicetak || 0 }} kali total<span v-if="item.terakhirDipakai"> · terakhir {{ formatTanggal(item.terakhirDipakai) }}</span></p>
 
         <!-- Tampilan Gambar dari Base64 Firestore -->
         <div v-if="item.imageUrl" class="mb-3">
@@ -231,7 +233,7 @@
             ]"
           >
             <span class="uppercase font-bold mr-1">{{ kunci }}.</span>
-            {{ item.opsi[kunci] }}
+            <MathText :text="item.opsi[kunci]" />
             <span v-if="item.kunciJawaban === kunci" class="ml-2 inline-flex items-center gap-1 text-xs"
               ><AppIcon name="check" class="h-3 w-3" /> Kunci</span
             >
@@ -265,6 +267,7 @@
               <option value="essay">Essay / Uraian</option>
             </select>
           </div>
+          <div><label class="mb-1 block text-sm font-medium">Tingkat Kesulitan</label><div class="grid grid-cols-3 gap-2"><label v-for="level in ['mudah','sedang','sulit']" :key="level" :class="['cursor-pointer rounded-xl border px-3 py-2 text-center text-xs font-bold capitalize transition', formSoal.tingkatKesulitan === level ? difficultyClass(level) : 'border-slate-200 text-slate-500 dark:border-slate-700']"><input v-model="formSoal.tingkatKesulitan" type="radio" :value="level" class="hidden" />{{ level }}</label></div></div>
 
           <div>
             <label class="block text-sm font-medium mb-1"
@@ -306,8 +309,7 @@
               class="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 cursor-pointer"
             />
             <p class="text-[11px] text-slate-400">
-              Gambar akan otomatis diompres & disimpan langsung ke database
-              (Maks 1MB).
+              Gambar disimpan ke Firebase Storage (maksimal 2 MB).
             </p>
 
             <!-- Pratinjau Gambar -->
@@ -342,6 +344,7 @@
                 :placeholder="`Jawaban ${kunci.toUpperCase()}`"
                 class="flex-1 px-3 py-2 text-sm rounded-xl border border-slate-300 dark:border-slate-600 bg-transparent outline-none focus:ring-2 focus:ring-brand-500"
               />
+              <label class="grid h-9 w-9 shrink-0 cursor-pointer place-items-center rounded-lg border border-slate-200 text-slate-400 hover:text-brand-600 dark:border-slate-700" :title="`Upload gambar opsi ${kunci.toUpperCase()}`"><AppIcon name="image" class="h-4 w-4" /><input type="file" accept="image/*" class="hidden" @change="handleOpsiImage($event, kunci)" /></label>
               <label
                 class="flex items-center gap-1 text-xs cursor-pointer px-2 py-1 rounded-lg border hover:bg-slate-100 dark:hover:bg-slate-700"
               >
@@ -354,6 +357,7 @@
                 <span>Kunci</span>
               </label>
             </div>
+            <div v-if="Object.values(formSoal.opsiGambar || {}).some(Boolean)" class="grid grid-cols-2 gap-2 pt-2"><div v-for="kunci in ['a','b','c','d']" :key="`preview-${kunci}`" v-show="formSoal.opsiGambar?.[kunci]" class="relative rounded-lg border border-slate-200 p-2 dark:border-slate-700"><button type="button" @click="formSoal.opsiGambar[kunci] = ''" class="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-white text-red-500 shadow"><AppIcon name="x" class="h-3 w-3" /></button><p class="mb-1 text-[10px] font-bold uppercase">Opsi {{ kunci }}</p><img :src="formSoal.opsiGambar[kunci]" class="h-20 w-full object-contain" /></div></div>
           </div>
 
           <div
@@ -435,6 +439,8 @@ import {
   doc,
   getDoc,
 } from "firebase/firestore";
+import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
+import * as XLSX from "xlsx";
 
 definePageMeta({
   middleware: "auth",
@@ -447,7 +453,7 @@ const kelasId = route.params.id;
 const assignmentId = computed(() => String(route.query.assignment || "legacy"));
 const jenjang = computed(() => String(route.query.jenjang || "SD"));
 const schoolName = computed(() => String(route.query.sekolah || "Sekolah Saya"));
-const { db } = useFirebase();
+const { db, storage } = useFirebase();
 const { user, initAuth } = useAuth();
 
 const mapelAjar = ref([]);
@@ -458,6 +464,8 @@ const loadingData = ref(true);
 // State Search & Filter Tipe
 const searchQuery = ref("");
 const filterTipe = ref("semua");
+const filterKesulitan = ref("semua");
+const csvInput = ref(null);
 
 // State Modal Form (Tambah & Edit)
 const showModalForm = ref(false);
@@ -471,7 +479,9 @@ const formSoal = ref({
   pertanyaan: "",
   imageUrl: "",
   opsi: { a: "", b: "", c: "", d: "" },
+  opsiGambar: { a: "", b: "", c: "", d: "" },
   kunciJawaban: "a",
+  tingkatKesulitan: "sedang",
 });
 
 // State Modal Konfirmasi Hapus
@@ -492,6 +502,7 @@ const filteredSoal = computed(() => {
   return daftarSoal.value.filter((item) => {
     if (filterTipe.value === "pg" && item.tipe === "essay") return false;
     if (filterTipe.value === "essay" && item.tipe !== "essay") return false;
+    if (filterKesulitan.value !== "semua" && (item.tingkatKesulitan || "sedang") !== filterKesulitan.value) return false;
 
     if (searchQuery.value.trim()) {
       const q = searchQuery.value.toLowerCase();
@@ -558,28 +569,33 @@ const loadSoal = async () => {
   }
 };
 
-// HANDLER UPLOAD FILE & KONVERSI KE BASE64
-const handleFileUpload = (e) => {
+const handleFileUpload = async (e) => {
   const file = e.target.files[0];
   if (!file) return;
-
-  // Batas ukuran file (maksimal 1 MB agar ukuran Firestore hemat)
-  if (file.size > 1024 * 1024) {
-    alert("Ukuran gambar terlalu besar! Maksimal 1 MB.");
+  if (file.size > 2 * 1024 * 1024) {
+    alert("Ukuran gambar terlalu besar! Maksimal 2 MB.");
     if (fileInputRef.value) fileInputRef.value.value = "";
     return;
   }
-
-  const reader = new FileReader();
-  reader.onload = (event) => {
-    formSoal.value.imageUrl = event.target.result; // Hasilnya berupa string Base64
-  };
-  reader.readAsDataURL(file);
+  try {
+    const path = `soal/${user.value.uid}/${assignmentId.value}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "-")}`;
+    const target = storageRef(storage, path);
+    await uploadBytes(target, file, { contentType: file.type });
+    formSoal.value.imageUrl = await getDownloadURL(target);
+  } catch (error) {
+    console.error("Gagal upload gambar:", error);
+    alert("Upload gambar gagal. Pastikan Firebase Storage dan rules sudah aktif.");
+  }
 };
 
 const hapusGambar = () => {
   formSoal.value.imageUrl = "";
   if (fileInputRef.value) fileInputRef.value.value = "";
+};
+const handleOpsiImage = async (event, kunci) => {
+  const file = event.target.files?.[0]; if (!file) return;
+  if (file.size > 2 * 1024 * 1024) { alert("Ukuran gambar maksimal 2 MB."); return; }
+  try { const target = storageRef(storage, `soal/${user.value.uid}/${assignmentId.value}/opsi-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "-")}`); await uploadBytes(target, file, { contentType: file.type }); formSoal.value.opsiGambar[kunci] = await getDownloadURL(target); } catch (error) { console.error(error); alert("Upload gambar opsi gagal."); }
 };
 
 // Handler Buka Form Modal
@@ -591,7 +607,9 @@ const bukaModalTambah = () => {
     pertanyaan: "",
     imageUrl: "",
     opsi: { a: "", b: "", c: "", d: "" },
+    opsiGambar: { a: "", b: "", c: "", d: "" },
     kunciJawaban: "a",
+    tingkatKesulitan: "sedang",
   };
   if (fileInputRef.value) fileInputRef.value.value = "";
   showModalForm.value = true;
@@ -605,7 +623,9 @@ const bukaModalEdit = (soal) => {
     pertanyaan: soal.pertanyaan || "",
     imageUrl: soal.imageUrl || "",
     opsi: soal.opsi ? { ...soal.opsi } : { a: "", b: "", c: "", d: "" },
+    opsiGambar: soal.opsiGambar ? { ...soal.opsiGambar } : { a: "", b: "", c: "", d: "" },
     kunciJawaban: soal.kunciJawaban || "a",
+    tingkatKesulitan: soal.tingkatKesulitan || "sedang",
   };
   if (fileInputRef.value) fileInputRef.value.value = "";
   showModalForm.value = true;
@@ -620,7 +640,9 @@ const duplikatSoal = (soal) => {
     pertanyaan: `${soal.pertanyaan} (Salinan)`,
     imageUrl: soal.imageUrl || "",
     opsi: soal.opsi ? { ...soal.opsi } : { a: "", b: "", c: "", d: "" },
+    opsiGambar: soal.opsiGambar ? { ...soal.opsiGambar } : { a: "", b: "", c: "", d: "" },
     kunciJawaban: soal.kunciJawaban || "a",
+    tingkatKesulitan: soal.tingkatKesulitan || "sedang",
   };
   if (fileInputRef.value) fileInputRef.value.value = "";
   showModalForm.value = true;
@@ -666,7 +688,9 @@ const simpanSoal = async () => {
       tipe: formSoal.value.tipe,
       pertanyaan: pertanyaanClean,
       imageUrl: formSoal.value.imageUrl, // Berisi string Base64 gambar
+      tingkatKesulitan: formSoal.value.tingkatKesulitan,
       opsi: formSoal.value.tipe === "pg" ? formSoal.value.opsi : null,
+      opsiGambar: formSoal.value.tipe === "pg" ? formSoal.value.opsiGambar : null,
       kunciJawaban:
         formSoal.value.tipe === "pg" ? formSoal.value.kunciJawaban : null,
       updatedAt: new Date(),
@@ -676,6 +700,7 @@ const simpanSoal = async () => {
       await updateDoc(doc(db, "soal", editSoalId.value), dataPayload);
     } else {
       dataPayload.dipakai = false;
+      dataPayload.jumlahDicetak = 0;
       dataPayload.createdAt = new Date();
       await addDoc(collection(db, "soal"), dataPayload);
     }
@@ -706,6 +731,66 @@ const eksekusiHapusSoal = async () => {
   } catch (e) {
     console.error("Gagal menghapus soal:", e);
   }
+};
+
+const difficultyClass = (level) => ({
+  mudah: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
+  sedang: "border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
+  sulit: "border-red-200 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300",
+}[level || "sedang"]);
+
+const formatTanggal = (value) => {
+  const date = value?.toDate ? value.toDate() : new Date(value);
+  return Number.isNaN(date.getTime()) ? "-" : new Intl.DateTimeFormat("id-ID", { dateStyle: "medium" }).format(date);
+};
+const penggunaanSetahun = (soal) => { const batas = Date.now() - 365 * 24 * 60 * 60 * 1000; return (soal.riwayatPenggunaan || []).filter(value => { const date = value?.toDate ? value.toDate() : new Date(value); return date.getTime() >= batas; }).length; };
+
+const csvEscape = (value) => `"${String(value ?? "").replaceAll('"', '""')}"`;
+const downloadFile = (content, name, type = "text/csv;charset=utf-8") => {
+  const url = URL.createObjectURL(new Blob(["\ufeff", content], { type }));
+  const link = document.createElement("a"); link.href = url; link.download = name; link.click(); URL.revokeObjectURL(url);
+};
+const csvHeader = ["tipe", "tingkatKesulitan", "pertanyaan", "opsiA", "opsiB", "opsiC", "opsiD", "kunciJawaban"];
+const downloadTemplateCsv = () => downloadFile(`${csvHeader.join(",")}\npg,mudah,Contoh pertanyaan?,Jawaban A,Jawaban B,Jawaban C,Jawaban D,a\nessay,sedang,Jelaskan jawaban Anda,,,,,`, "template-soal.csv");
+const exportCsv = () => {
+  const rows = daftarSoal.value.map(s => [s.tipe || "pg", s.tingkatKesulitan || "sedang", s.pertanyaan, s.opsi?.a, s.opsi?.b, s.opsi?.c, s.opsi?.d, s.kunciJawaban].map(csvEscape).join(","));
+  downloadFile([csvHeader.join(","), ...rows].join("\n"), `soal-${selectedMapel.value}-kelas-${kelasId}.csv`);
+};
+const parseCsv = (text) => {
+  const rows = []; let row = []; let value = ""; let quoted = false;
+  for (let i = 0; i < text.length; i++) { const char = text[i]; if (char === '"' && quoted && text[i + 1] === '"') { value += '"'; i++; } else if (char === '"') quoted = !quoted; else if (char === "," && !quoted) { row.push(value); value = ""; } else if ((char === "\n" || char === "\r") && !quoted) { if (char === "\r" && text[i + 1] === "\n") i++; row.push(value); if (row.some(Boolean)) rows.push(row); row = []; value = ""; } else value += char; }
+  row.push(value); if (row.some(Boolean)) rows.push(row); return rows;
+};
+const importCsv = async (event) => {
+  const file = event.target.files?.[0]; if (!file) return;
+  try {
+    const rows = parseCsv(await file.text()); const headers = rows.shift()?.map(h => h.trim().replace(/^\ufeff/, ""));
+    if (!headers || !csvHeader.every(h => headers.includes(h))) throw new Error("Format kolom tidak sesuai template");
+    let imported = 0;
+    for (const row of rows) { const data = Object.fromEntries(headers.map((h, i) => [h, row[i]?.trim() || ""])); if (!data.pertanyaan) continue; const tipe = data.tipe.toLowerCase() === "essay" ? "essay" : "pg"; await addDoc(collection(db, "soal"), { userId: user.value.uid, kelas: Number(kelasId), mapel: selectedMapel.value, assignmentId: assignmentId.value, jenjang: jenjang.value, namaSekolah: schoolName.value, tipe, tingkatKesulitan: ["mudah", "sedang", "sulit"].includes(data.tingkatKesulitan.toLowerCase()) ? data.tingkatKesulitan.toLowerCase() : "sedang", pertanyaan: data.pertanyaan, imageUrl: "", opsi: tipe === "pg" ? { a: data.opsiA, b: data.opsiB, c: data.opsiC, d: data.opsiD } : null, kunciJawaban: tipe === "pg" ? data.kunciJawaban.toLowerCase() : null, dipakai: false, jumlahDicetak: 0, createdAt: new Date(), updatedAt: new Date() }); imported++; }
+    await loadSoal(); alert(`${imported} soal berhasil diimpor.`);
+  } catch (error) { console.error(error); alert(`Import gagal: ${error.message}`); } finally { event.target.value = ""; }
+};
+
+const downloadTemplateExcel = () => {
+  const data = [csvHeader, ["pg", "mudah", "Contoh pertanyaan?", "Jawaban A", "Jawaban B", "Jawaban C", "Jawaban D", "a"], ["essay", "sedang", "Jelaskan jawaban Anda", "", "", "", "", ""]];
+  const sheet = XLSX.utils.aoa_to_sheet(data); sheet['!cols'] = [{ wch: 12 }, { wch: 18 }, { wch: 50 }, { wch: 25 }, { wch: 25 }, { wch: 25 }, { wch: 25 }, { wch: 16 }];
+  const workbook = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(workbook, sheet, "Template Soal"); XLSX.writeFile(workbook, "template-soal.xlsx");
+};
+const exportExcel = () => {
+  const data = daftarSoal.value.map(s => ({ tipe: s.tipe || "pg", tingkatKesulitan: s.tingkatKesulitan || "sedang", pertanyaan: s.pertanyaan, opsiA: s.opsi?.a || "", opsiB: s.opsi?.b || "", opsiC: s.opsi?.c || "", opsiD: s.opsi?.d || "", kunciJawaban: s.kunciJawaban || "" }));
+  const sheet = XLSX.utils.json_to_sheet(data, { header: csvHeader }); const workbook = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(workbook, sheet, "Bank Soal"); XLSX.writeFile(workbook, `soal-${selectedMapel.value}-kelas-${kelasId}.xlsx`);
+};
+const importSpreadsheet = async (event) => {
+  const file = event.target.files?.[0]; if (!file) return;
+  if (file.name.toLowerCase().endsWith('.csv')) return importCsv(event);
+  try {
+    const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array' }); const sheet = workbook.Sheets[workbook.SheetNames[0]]; const dataRows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+    if (!dataRows.length || !csvHeader.every(key => key in dataRows[0])) throw new Error('Format kolom tidak sesuai template');
+    let imported = 0;
+    for (const data of dataRows) { if (!String(data.pertanyaan).trim()) continue; const tipe = String(data.tipe).toLowerCase() === 'essay' ? 'essay' : 'pg'; await addDoc(collection(db, 'soal'), { userId: user.value.uid, kelas: Number(kelasId), mapel: selectedMapel.value, assignmentId: assignmentId.value, jenjang: jenjang.value, namaSekolah: schoolName.value, tipe, tingkatKesulitan: ['mudah','sedang','sulit'].includes(String(data.tingkatKesulitan).toLowerCase()) ? String(data.tingkatKesulitan).toLowerCase() : 'sedang', pertanyaan: String(data.pertanyaan).trim(), imageUrl: '', opsi: tipe === 'pg' ? { a: String(data.opsiA), b: String(data.opsiB), c: String(data.opsiC), d: String(data.opsiD) } : null, opsiGambar: null, kunciJawaban: tipe === 'pg' ? String(data.kunciJawaban).toLowerCase() : null, dipakai: false, jumlahDicetak: 0, createdAt: new Date(), updatedAt: new Date() }); imported++; }
+    await loadSoal(); alert(`${imported} soal berhasil diimpor dari Excel.`);
+  } catch (error) { console.error(error); alert(`Import Excel gagal: ${error.message}`); } finally { event.target.value = ''; }
 };
 
 watch(selectedMapel, () => {

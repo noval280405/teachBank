@@ -12,7 +12,7 @@
           <div :class="['flex items-center justify-between border-b px-5 py-4', warnaJenjang(tugas.jenjang).header]"><div class="flex items-center gap-3"><span :class="['grid h-9 w-9 place-items-center rounded-xl', warnaJenjang(tugas.jenjang).icon]"><AppIcon name="school" class="h-4 w-4" /></span><div><div class="flex items-center gap-2"><h2 :class="['font-bold', warnaJenjang(tugas.jenjang).text]">{{ tugas.jenjang }}</h2><span class="text-xs text-slate-300">•</span><span class="text-xs font-semibold text-slate-400">Urutan {{ index + 1 }}</span></div><p class="text-xs text-slate-500">{{ tugas.namaSekolah || 'Nama sekolah belum diisi' }}</p></div></div><button v-if="form.penugasan.length > 1" type="button" @click="hapusPenugasan(tugas.id)" class="grid h-9 w-9 place-items-center rounded-xl text-red-500 hover:bg-red-50" title="Hapus sekolah"><AppIcon name="trash" class="h-4 w-4" /></button></div>
           <div class="space-y-6 p-5 sm:p-6">
             <div class="grid gap-4 sm:grid-cols-[180px_1fr]">
-              <div><label class="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Jenjang sekolah ini</label><div class="grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-900/50"><button v-for="jenjang in jenjangOptions" :key="jenjang" type="button" @click="ubahJenjang(tugas, jenjang)" :class="['rounded-lg py-2 text-xs font-bold transition', tugas.jenjang === jenjang ? 'bg-white text-brand-600 shadow-sm dark:bg-slate-700 dark:text-brand-300' : 'text-slate-500']">{{ jenjang }}</button></div><p class="mt-1.5 text-[10px] leading-relaxed text-slate-400">Memilih jenjang lain setelah data diisi akan membuat penugasan baru.</p></div>
+              <div><label class="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Jenjang sekolah ini</label><div class="grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-900/50"><button v-for="jenjang in jenjangOptions" :key="jenjang" type="button" @click="ubahJenjang(tugas, jenjang)" :class="['rounded-lg py-2 text-xs font-bold transition', tugas.jenjang === jenjang ? 'bg-white text-brand-600 shadow-sm dark:bg-slate-700 dark:text-brand-300' : 'text-slate-500']">{{ jenjang }}</button></div><p class="mt-1.5 text-[10px] leading-relaxed text-slate-400">Pilihan ini hanya mengubah jenjang sekolah pada kartu ini.</p></div>
               <div><label class="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">Nama sekolah</label><input v-model.trim="tugas.namaSekolah" required type="text" :placeholder="`Contoh: ${tugas.jenjang} Negeri 1`" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-900/40" /></div>
             </div>
             <div><div class="mb-3"><h3 class="text-sm font-bold">Kelas yang diajar</h3><p class="text-xs text-slate-500">{{ tugas.jenjang === 'SD' ? 'SD memiliki kelas 1 sampai 6.' : `${tugas.jenjang} memiliki 3 tingkat kelas.` }}</p></div><div class="grid grid-cols-3 gap-2 sm:grid-cols-6"><label v-for="kelas in jumlahKelas(tugas.jenjang)" :key="kelas" :class="['relative flex min-h-16 cursor-pointer flex-col items-center justify-center rounded-xl border transition', tugas.kelasAjar.includes(kelas) ? 'border-brand-500 bg-brand-50 font-bold text-brand-600 dark:bg-brand-900/30 dark:text-brand-300' : 'border-slate-200 text-slate-500 hover:border-brand-300 dark:border-slate-700']"><input v-model="tugas.kelasAjar" type="checkbox" :value="kelas" class="hidden" /><span class="text-lg font-bold">{{ kelas }}</span><span class="text-[9px] uppercase">Kelas</span><AppIcon v-if="tugas.kelasAjar.includes(kelas)" name="check" class="absolute right-1.5 top-1.5 h-3 w-3" /></label></div></div>
@@ -61,24 +61,9 @@ const tambahPenugasan = (jenjang = 'SD') => form.value.penugasan.push(buatPenuga
 const hapusPenugasan = (id) => { form.value.penugasan = form.value.penugasan.filter(tugas => tugas.id !== id) }
 const ubahJenjang = (tugas, jenjang) => {
   if (tugas.jenjang === jenjang) return
-
-  // Jangan menimpa penugasan yang sudah diisi. Buat kartu baru agar kelas
-  // dari jenjang sebelumnya tetap tersimpan dan tidak tercampur.
-  const sudahDiisi = Boolean(
-    tugas.namaSekolah.trim() || tugas.kelasAjar.length || tugas.mapelAjar.length,
-  )
-  if (sudahDiisi) {
-    const index = form.value.penugasan.findIndex(item => item.id === tugas.id)
-    form.value.penugasan.splice(index + 1, 0, buatPenugasan({ jenjang }))
-    nextTick(() => {
-      document.getElementById(`penugasan-${form.value.penugasan[index + 1].id}`)
-        ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    })
-    return
-  }
-
   tugas.jenjang = jenjang
-  tugas.kelasAjar = []
+  tugas.kelasAjar = tugas.kelasAjar.filter(kelas => kelas <= jumlahKelas(jenjang))
+  sinkronMapel(tugas)
 }
 const mapelKelas = (tugas, kelas) => tugas.mapelPerKelas?.[kelas] || []
 const toggleMapelKelas = (tugas, kelas, mapel) => { const sekarang = mapelKelas(tugas, kelas); tugas.mapelPerKelas[kelas] = sekarang.includes(mapel) ? sekarang.filter(m => m !== mapel) : [...sekarang, mapel]; sinkronMapel(tugas) }

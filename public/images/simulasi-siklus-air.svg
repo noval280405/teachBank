@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 320">
+  <rect width="560" height="320" rx="24" fill="#eff6ff"/>
+  <circle cx="90" cy="75" r="38" fill="#facc15"/><g fill="#fff" stroke="#94a3b8" stroke-width="3"><ellipse cx="355" cy="80" rx="75" ry="32"/><ellipse cx="425" cy="100" rx="72" ry="30"/></g>
+  <path d="M0 252Q120 190 230 250T560 235V320H0Z" fill="#38bdf8"/><path d="M80 240Q145 115 210 240" fill="#4ade80" stroke="#16a34a" stroke-width="4"/>
+  <path d="M275 225c-32-60-18-105 16-135" fill="none" stroke="#0ea5e9" stroke-width="6" marker-end="url(#a)"/><path d="M410 130c28 42 20 78-8 105" fill="none" stroke="#2563eb" stroke-width="6" marker-end="url(#a)"/>
+  <defs><marker id="a" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0 0v6l7-3Z" fill="#2563eb"/></marker></defs>
+  <text x="230" y="60" font-family="Arial" font-size="17" font-weight="700" fill="#0369a1">Penguapan</text><text x="425" y="180" font-family="Arial" font-size="17" font-weight="700" fill="#1d4ed8">Hujan</text>
+</svg>
