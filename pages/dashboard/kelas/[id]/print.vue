@@ -59,7 +59,7 @@
               </tr>
               <tr>
                 <td class="py-1 font-bold">KELAS</td>
-                <td class="py-1">: {{ printData.kelas }} SD</td>
+                <td class="py-1">: {{ printData.kelas }} {{ printData.jenjang || 'SD' }}</td>
                 <td class="py-1 font-bold">WAKTU</td>
                 <td class="py-1">: 90 Menit</td>
               </tr>
@@ -149,7 +149,7 @@
         <div v-if="tampilkanKunci" class="break-before-page pt-6 border-t-2 border-dashed border-black font-sans">
           <div class="text-center mb-4">
             <h3 class="text-sm font-bold uppercase">Kunci Jawaban & Pegangan Guru</h3>
-            <p class="text-[11px] text-slate-600">Mata Pelajaran: {{ printData.mapel }} | Kelas {{ printData.kelas }} SD</p>
+            <p class="text-[11px] text-slate-600">Mata Pelajaran: {{ printData.mapel }} | Kelas {{ printData.kelas }} {{ printData.jenjang || 'SD' }}</p>
           </div>
 
           <div class="grid grid-cols-5 gap-2 text-xs">
@@ -196,6 +196,7 @@ setPageLayout(false)
 const printData = ref({
   infoUjian: {},
   kelas: '',
+  jenjang: 'SD',
   mapel: '',
   pg: [],
   essay: []

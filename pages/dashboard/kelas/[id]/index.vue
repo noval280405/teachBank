@@ -1,90 +1,77 @@
 <!-- pages/dashboard/kelas/[id]/index.vue -->
 <template>
-  <div>
+  <div class="mx-auto max-w-6xl space-y-6 pb-16 text-slate-800 dark:text-slate-100">
     <!-- Header Navigation -->
-    <div
-      class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6"
-    >
-      <div>
+    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-brand-800 to-brand-600 p-6 text-white shadow-xl shadow-brand-900/10 sm:p-8">
+      <div class="absolute -right-16 -top-20 h-64 w-64 rounded-full bg-white/10"></div>
+      <div class="absolute -bottom-20 right-48 h-44 w-44 rounded-full bg-brand-300/10"></div>
+      <div class="relative flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+      <div class="max-w-2xl">
         <NuxtLink
           to="/dashboard"
-          class="text-sm text-brand-600 dark:text-brand-400 hover:underline"
-          >← Kembali ke Dashboard</NuxtLink
+          class="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-white/75 transition hover:text-white"
+          ><AppIcon name="arrowLeft" class="h-4 w-4" /> Kembali ke Dashboard</NuxtLink
         >
-        <h1 class="text-2xl font-bold mt-1">
-          Gudang Soal Kelas {{ kelasId }} SD
-        </h1>
+        <div class="flex items-start gap-4"><span class="hidden h-12 w-12 shrink-0 place-items-center rounded-2xl bg-white/15 ring-1 ring-white/20 sm:grid"><AppIcon name="book" class="h-6 w-6" /></span><div><p class="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-brand-100">{{ schoolName }}</p><h1 class="text-2xl font-bold tracking-tight sm:text-3xl">Gudang Soal Kelas {{ kelasId }} {{ jenjang }}</h1><p class="mt-2 text-sm text-brand-100">Kelola, susun, dan siapkan soal ujian dalam satu tempat.</p></div></div>
       </div>
 
       <ClientOnly>
-        <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+        <div class="flex w-full flex-col gap-2 rounded-2xl bg-white/10 p-2 ring-1 ring-white/15 backdrop-blur-sm sm:w-auto sm:flex-row">
           <!-- Filter Mapel -->
           <select
             v-if="mapelAjar.length > 0"
             v-model="selectedMapel"
             @change="updateUrlQuery"
-            class="flex-1 sm:flex-none px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 font-semibold text-sm outline-none focus:ring-2 focus:ring-brand-500"
+            class="min-w-40 flex-1 rounded-xl border-0 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 outline-none sm:flex-none"
           >
             <option v-for="m in mapelAjar" :key="m" :value="m">{{ m }}</option>
           </select>
 
           <!-- Tombol Cetak Soal -->
           <NuxtLink
-            :to="`/dashboard/kelas/${kelasId}/cetak`"
-            class="bg-amber-500 hover:bg-amber-600 text-white font-medium px-4 py-2 rounded-xl transition shadow text-sm flex items-center gap-1.5"
+            :to="{ path: `/dashboard/kelas/${kelasId}/cetak`, query: route.query }"
+            class="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-semibold text-amber-950 shadow transition hover:bg-amber-300"
           >
-            🖨️ Cetak Soal Ujian
+            <AppIcon name="printer" class="h-4 w-4" /> Cetak Ujian
           </NuxtLink>
 
           <!-- Tombol Buat Soal -->
           <button
             @click="bukaModalTambah"
             :disabled="!selectedMapel"
-            class="bg-brand-600 hover:bg-brand-700 text-white font-medium px-4 py-2 rounded-xl transition shadow text-sm disabled:opacity-50"
+            class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-brand-700 shadow transition hover:bg-brand-50 disabled:opacity-50"
           >
-            + Buat Soal
+            <AppIcon name="plus" class="h-4 w-4" /> Buat Soal
           </button>
         </div>
-      </ClientOnly>
+      </ClientOnly></div>
     </div>
 
     <!-- Ringkasan Statistik Soal -->
     <ClientOnly>
       <div
         v-if="mapelAjar.length > 0 && !loadingData"
-        class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6"
+        class="grid grid-cols-2 gap-3 lg:grid-cols-4"
       >
         <div
-          class="p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700"
+          class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800"
         >
-          <p class="text-xs text-slate-500">Total Soal</p>
-          <p class="text-lg font-bold text-slate-800 dark:text-slate-100">
-            {{ stats.total }} Soal
-          </p>
+          <div class="mb-3 flex items-center justify-between"><span class="grid h-9 w-9 place-items-center rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300"><AppIcon name="layers" class="h-4 w-4" /></span><span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Semua</span></div><p class="text-2xl font-bold">{{ stats.total }}</p><p class="text-xs text-slate-500">Total soal</p>
         </div>
         <div
-          class="p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700"
+          class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800"
         >
-          <p class="text-xs text-slate-500">Pilihan Ganda</p>
-          <p class="text-lg font-bold text-brand-600 dark:text-brand-400">
-            {{ stats.pg }} Soal
-          </p>
+          <div class="mb-3 flex items-center justify-between"><span class="grid h-9 w-9 place-items-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-300"><AppIcon name="list" class="h-4 w-4" /></span><span class="text-[10px] font-bold uppercase tracking-wider text-brand-500">PG</span></div><p class="text-2xl font-bold text-brand-600 dark:text-brand-400">{{ stats.pg }}</p><p class="text-xs text-slate-500">Pilihan ganda</p>
         </div>
         <div
-          class="p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700"
+          class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800"
         >
-          <p class="text-xs text-slate-500">Essay / Uraian</p>
-          <p class="text-lg font-bold text-purple-600 dark:text-purple-400">
-            {{ stats.essay }} Soal
-          </p>
+          <div class="mb-3 flex items-center justify-between"><span class="grid h-9 w-9 place-items-center rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-900/30 dark:text-purple-300"><AppIcon name="edit" class="h-4 w-4" /></span><span class="text-[10px] font-bold uppercase tracking-wider text-purple-500">Uraian</span></div><p class="text-2xl font-bold text-purple-600 dark:text-purple-400">{{ stats.essay }}</p><p class="text-xs text-slate-500">Essay / uraian</p>
         </div>
         <div
-          class="p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700"
+          class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800"
         >
-          <p class="text-xs text-slate-500">Belum Dipakai</p>
-          <p class="text-lg font-bold text-emerald-600 dark:text-emerald-400">
-            {{ stats.belumDipakai }} Soal
-          </p>
+          <div class="mb-3 flex items-center justify-between"><span class="grid h-9 w-9 place-items-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-300"><AppIcon name="sparkle" class="h-4 w-4" /></span><span class="text-[10px] font-bold uppercase tracking-wider text-emerald-500">Segar</span></div><p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{{ stats.belumDipakai }}</p><p class="text-xs text-slate-500">Belum dipakai</p>
         </div>
       </div>
     </ClientOnly>
@@ -93,16 +80,16 @@
     <ClientOnly>
       <div
         v-if="mapelAjar.length > 0 && daftarSoal.length > 0"
-        class="flex flex-col sm:flex-row gap-3 mb-6"
+        class="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:flex-row"
       >
         <div class="relative flex-1">
           <input
             v-model="searchQuery"
             type="text"
             placeholder="Cari pertanyaan atau teks soal..."
-            class="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:ring-2 focus:ring-brand-500"
+            class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-900/50"
           />
-          <span class="absolute left-3 top-2.5 text-slate-400 text-sm">🔍</span>
+          <AppIcon name="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
         </div>
 
         <div
@@ -126,8 +113,8 @@
     </ClientOnly>
 
     <!-- State Loading -->
-    <div v-if="loadingData" class="text-center py-12 text-slate-500">
-      Memuat data soal...
+    <div v-if="loadingData" class="rounded-2xl border border-slate-200 bg-white py-14 text-center text-slate-500 dark:border-slate-700 dark:bg-slate-800">
+      <AppIcon name="loader" class="mx-auto mb-3 h-6 w-6 animate-spin text-brand-500" /><p class="text-sm font-medium">Memuat data soal...</p>
     </div>
 
     <!-- State Belum Ada Mapel -->
@@ -165,10 +152,10 @@
       <div
         v-for="(item, index) in filteredSoal"
         :key="item.id"
-        class="p-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm"
+        class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-md dark:border-slate-700 dark:bg-slate-800"
       >
         <div class="flex justify-between items-start gap-4 mb-3">
-          <div class="flex items-center gap-2">
+          <div class="flex flex-wrap items-center gap-2">
             <span
               class="text-xs font-semibold px-2.5 py-1 rounded-full bg-brand-50 dark:bg-brand-900/40 text-brand-600 dark:text-brand-400"
             >
@@ -181,35 +168,35 @@
               v-if="item.dipakai"
               class="px-2.5 py-1 text-[10px] font-bold rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
             >
-              ⚠️ Pernah Dicetak
+              <span class="inline-flex items-center gap-1"><AppIcon name="alert" class="h-3 w-3" /> Pernah Dicetak</span>
             </span>
             <span
               v-else
               class="px-2.5 py-1 text-[10px] font-bold rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
             >
-              ✨ Belum Dipakai
+              <span class="inline-flex items-center gap-1"><AppIcon name="sparkle" class="h-3 w-3" /> Belum Dipakai</span>
             </span>
           </div>
 
-          <div class="flex items-center gap-3">
+          <div class="flex items-center gap-1 rounded-xl bg-slate-50 p-1 dark:bg-slate-900/40">
             <button
               @click="duplikatSoal(item)"
-              class="text-slate-500 hover:text-slate-700 font-medium text-xs flex items-center gap-1"
+              class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-white hover:text-slate-700 hover:shadow-sm dark:hover:bg-slate-700"
               title="Gandakan Soal Ini"
             >
-              📋 Duplikat
+              <AppIcon name="copy" class="h-3.5 w-3.5" /> <span class="hidden sm:inline">Duplikat</span>
             </button>
             <button
               @click="bukaModalEdit(item)"
-              class="text-brand-600 hover:text-brand-700 font-medium text-xs flex items-center gap-1"
+              class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand-600 transition hover:bg-white hover:shadow-sm dark:hover:bg-slate-700"
             >
-              ✏️ Edit
+              <AppIcon name="edit" class="h-3.5 w-3.5" /> <span class="hidden sm:inline">Edit</span>
             </button>
             <button
               @click="mintaKonfirmasiHapus(item)"
-              class="text-red-500 hover:text-red-700 font-medium text-xs flex items-center gap-1"
+              class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-red-500 transition hover:bg-white hover:text-red-700 hover:shadow-sm dark:hover:bg-slate-700"
             >
-              🗑️ Hapus
+              <AppIcon name="trash" class="h-3.5 w-3.5" /> <span class="hidden sm:inline">Hapus</span>
             </button>
           </div>
         </div>
@@ -245,8 +232,8 @@
           >
             <span class="uppercase font-bold mr-1">{{ kunci }}.</span>
             {{ item.opsi[kunci] }}
-            <span v-if="item.kunciJawaban === kunci" class="ml-2 text-xs"
-              >✓ (Kunci)</span
+            <span v-if="item.kunciJawaban === kunci" class="ml-2 inline-flex items-center gap-1 text-xs"
+              ><AppIcon name="check" class="h-3 w-3" /> Kunci</span
             >
           </div>
         </div>
@@ -257,16 +244,16 @@
     <ClientOnly>
       <div
         v-if="showModalForm"
-        class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto"
+        class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/60 p-4 backdrop-blur-sm"
       >
         <div
-          class="bg-white dark:bg-slate-800 w-full max-w-lg p-6 rounded-2xl shadow-xl space-y-4 my-8"
+          class="my-8 w-full max-w-lg space-y-5 rounded-3xl bg-white p-6 shadow-2xl dark:bg-slate-800"
         >
-          <h2 class="text-xl font-bold">
+          <div class="flex items-center justify-between"><h2 class="text-xl font-bold">
             {{ isEditMode ? "Edit Soal" : "Buat Soal Baru" }} ({{
               selectedMapel
             }})
-          </h2>
+          </h2><button @click="showModalForm = false" class="grid h-9 w-9 place-items-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700"><AppIcon name="x" class="h-4 w-4" /></button></div>
 
           <div>
             <label class="block text-sm font-medium mb-1">Tipe Soal</label>
@@ -299,7 +286,7 @@
               <label
                 class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400"
               >
-                🖼️ Upload Gambar Soal (Opsional)
+                <span class="inline-flex items-center gap-1.5"><AppIcon name="image" class="h-4 w-4" /> Upload Gambar Soal (Opsional)</span>
               </label>
               <button
                 v-if="formSoal.imageUrl"
@@ -384,7 +371,7 @@
               :disabled="isSubmitting"
               class="px-5 py-2 text-sm bg-brand-600 text-white font-medium rounded-xl hover:bg-brand-700 shadow disabled:opacity-50"
             >
-              <span v-if="isSubmitting">⏳ Menyimpan...</span>
+              <span v-if="isSubmitting" class="inline-flex items-center gap-2"><AppIcon name="loader" class="h-4 w-4 animate-spin" /> Menyimpan...</span>
               <span v-else>{{
                 isEditMode ? "Simpan Perubahan" : "Tambah Soal"
               }}</span>
@@ -406,7 +393,7 @@
           <div
             class="w-12 h-12 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold"
           >
-            ⚠️
+            <AppIcon name="alert" class="h-6 w-6" />
           </div>
           <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100">
             Hapus Soal Ini?
@@ -457,6 +444,9 @@ definePageMeta({
 const route = useRoute();
 const router = useRouter();
 const kelasId = route.params.id;
+const assignmentId = computed(() => String(route.query.assignment || "legacy"));
+const jenjang = computed(() => String(route.query.jenjang || "SD"));
+const schoolName = computed(() => String(route.query.sekolah || "Sekolah Saya"));
 const { db } = useFirebase();
 const { user, initAuth } = useAuth();
 
@@ -523,7 +513,9 @@ const loadPengaturanGuru = async () => {
     const docRef = doc(db, "pengaturanGuru", user.value.uid);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
-      mapelAjar.value = docSnap.data().mapelAjar || [];
+      const data = docSnap.data();
+      const tugas = data.penugasan?.find((item) => item.id === assignmentId.value);
+      mapelAjar.value = tugas?.mapelAjar || data.mapelAjar || [];
 
       const queryMapel = route.query.mapel;
       if (queryMapel && mapelAjar.value.includes(queryMapel)) {
@@ -552,10 +544,13 @@ const loadSoal = async () => {
       where("mapel", "==", selectedMapel.value),
     );
     const snapshot = await getDocs(q);
-    daftarSoal.value = snapshot.docs.map((doc) => ({
+    const semuaSoal = snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     }));
+    daftarSoal.value = assignmentId.value === "legacy"
+      ? semuaSoal.filter((soal) => !soal.assignmentId || soal.assignmentId === "legacy")
+      : semuaSoal.filter((soal) => soal.assignmentId === assignmentId.value);
   } catch (e) {
     console.error("Gagal memuat soal:", e);
   } finally {
@@ -654,7 +649,7 @@ const simpanSoal = async () => {
   });
 
   if (isDuplicate) {
-    alert("⚠️ Pertanyaan soal ini sudah ada di daftar!");
+    alert("Pertanyaan soal ini sudah ada di daftar!");
     return;
   }
 
@@ -665,6 +660,9 @@ const simpanSoal = async () => {
       userId: user.value.uid,
       kelas: Number(kelasId),
       mapel: selectedMapel.value,
+      assignmentId: assignmentId.value,
+      jenjang: jenjang.value,
+      namaSekolah: schoolName.value,
       tipe: formSoal.value.tipe,
       pertanyaan: pertanyaanClean,
       imageUrl: formSoal.value.imageUrl, // Berisi string Base64 gambar

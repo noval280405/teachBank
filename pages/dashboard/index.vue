@@ -1,89 +1,48 @@
-<!-- pages/dashboard/index.vue -->
 <template>
-  <div>
-    <div class="flex justify-between items-center mb-8">
-      <div>
-        <h1 class="text-2xl font-bold">Pilih Kelas Ajar</h1>
-        <p class="text-slate-500 text-sm mt-1">
-          Gudang soal disesuaikan dengan kelas dan mapel yang Anda ampu.
-        </p>
-      </div>
-      <NuxtLink
-        to="/pengaturan"
-        class="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-xl text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800"
-      >
-        ⚙️ Atur Kelas & Mapel
-      </NuxtLink>
-    </div>
+  <div class="mx-auto max-w-6xl space-y-6 pb-20 text-slate-800 dark:text-slate-100">
+    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-600 via-brand-700 to-indigo-800 p-6 text-white shadow-xl sm:p-8"><div class="absolute -right-20 -top-24 h-72 w-72 rounded-full bg-white/10"></div><div class="relative flex flex-col justify-between gap-6 sm:flex-row sm:items-end"><div class="flex items-start gap-4"><span class="hidden h-12 w-12 place-items-center rounded-2xl bg-white/15 sm:grid"><AppIcon name="graduation" class="h-6 w-6" /></span><div><p class="text-xs font-bold uppercase tracking-[.2em] text-brand-100">Ruang Mengajar</p><h1 class="mt-1 text-2xl font-bold sm:text-3xl">Kelas & Sekolah Anda</h1><p class="mt-2 max-w-xl text-sm text-brand-100">Cari kelas berdasarkan jenjang, sekolah, atau mata pelajaran.</p></div></div><NuxtLink to="/pengaturan" class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-brand-700 shadow"><AppIcon name="settings" class="h-4 w-4" />Atur Penugasan</NuxtLink></div></div>
 
-    <div v-if="loading" class="text-center py-12 text-slate-500">
-      Memuat data kelas...
-    </div>
+    <div v-if="loading" class="rounded-2xl border bg-white py-16 text-center text-slate-500 dark:border-slate-700 dark:bg-slate-800"><AppIcon name="loader" class="mx-auto mb-3 h-6 w-6 animate-spin text-brand-500" />Memuat data kelas...</div>
+    <div v-else-if="!kartuKelas.length" class="rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center dark:border-slate-700 dark:bg-slate-800"><span class="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-brand-50 text-brand-600"><AppIcon name="school" class="h-6 w-6" /></span><h2 class="font-bold">Penugasan belum diatur</h2><p class="mb-5 mt-1 text-sm text-slate-500">Tambahkan sekolah, jenjang, kelas, dan mata pelajaran Anda.</p><NuxtLink to="/pengaturan" class="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white"><AppIcon name="plus" class="h-4 w-4" />Tambah Penugasan</NuxtLink></div>
 
-    <!-- Jika belum atur kelas -->
-    <div
-      v-else-if="kelasAjar.length === 0"
-      class="text-center py-12 bg-white dark:bg-slate-800 rounded-2xl border p-8"
-    >
-      <p class="text-slate-500 mb-4">
-        Anda belum memilih kelas yang Anda ajar.
-      </p>
-      <NuxtLink
-        to="/pengaturan"
-        class="bg-brand-600 text-white px-6 py-2.5 rounded-xl font-medium"
-        >Atur Pengaturan Mengajar</NuxtLink
-      >
-    </div>
+    <template v-else>
+      <section class="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800"><div class="grid gap-2 md:grid-cols-[1fr_150px_200px]">
+        <div class="relative"><AppIcon name="search" class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input v-model="searchQuery" type="search" placeholder="Cari kelas, mapel, atau nama sekolah..." class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900/40" /></div>
+        <select v-model="filterJenjang" class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none dark:border-slate-700 dark:bg-slate-900/40"><option value="semua">Semua jenjang</option><option v-for="jenjang in ['SD','SMP','SMA/SMK']" :key="jenjang" :value="jenjang">{{ jenjang }}</option></select>
+        <select v-model="filterMapel" class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none dark:border-slate-700 dark:bg-slate-900/40"><option value="semua">Semua mata pelajaran</option><option v-for="mapel in daftarMapel" :key="mapel" :value="mapel">{{ mapel }}</option></select>
+      </div></section>
 
-    <!-- Grid Kelas Sesuai Pengaturan Guru -->
-    <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-      <NuxtLink
-        v-for="kelas in kelasAjar"
-        :key="kelas"
-        :to="`/dashboard/kelas/${kelas}`"
-        class="group p-6 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-brand-500 transition"
-      >
-        <div class="flex justify-between items-center">
-          <div
-            class="w-12 h-12 rounded-xl bg-brand-50 dark:bg-brand-900/40 text-brand-600 dark:text-brand-400 font-bold text-xl flex items-center justify-center"
-          >
-            {{ kelas }}
-          </div>
-          <span
-            class="text-slate-400 group-hover:translate-x-1 transition-transform"
-            >➡️</span
-          >
-        </div>
-        <h2 class="text-lg font-bold mt-4">Kelas {{ kelas }} SD</h2>
-        <p class="text-xs text-slate-500 mt-1">
-          Mapel: {{ mapelAjar.join(", ") }}
-        </p>
-      </NuxtLink>
-    </div>
+      <div class="flex items-end justify-between"><div><h2 class="font-bold">Daftar Kelas</h2><p class="text-xs text-slate-500">{{ filteredKartu.length }} dari {{ kartuKelas.length }} kelas</p></div><button v-if="adaFilter" @click="resetFilter" class="inline-flex items-center gap-1.5 text-xs font-semibold text-red-500"><AppIcon name="x" class="h-3.5 w-3.5" />Reset filter</button></div>
+
+      <div v-if="filteredKartu.length" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"><NuxtLink v-for="item in filteredKartu" :key="`${item.assignmentId}-${item.kelas}`" :to="kelasUrl(item)" :class="['group relative overflow-hidden rounded-2xl border-2 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg dark:bg-slate-800', warnaJenjang(item.jenjang).card]"><div :class="['absolute -right-10 -top-10 h-28 w-28 rounded-full transition-transform group-hover:scale-125', warnaJenjang(item.jenjang).decoration]"></div><div class="relative flex items-start justify-between"><div class="flex items-center gap-3"><span :class="['grid h-12 w-12 place-items-center rounded-xl text-xl font-bold', warnaJenjang(item.jenjang).number]">{{ item.kelas }}</span><div><span :class="['rounded-md px-2 py-0.5 text-[10px] font-bold', warnaJenjang(item.jenjang).badge]">{{ item.jenjang }}</span><h3 class="mt-1 font-bold">Kelas {{ item.kelas }}</h3></div></div><span :class="['grid h-9 w-9 place-items-center rounded-full border transition group-hover:translate-x-1', warnaJenjang(item.jenjang).arrow]"><AppIcon name="arrowLeft" class="h-4 w-4 rotate-180" /></span></div><div :class="['relative mt-4 border-t pt-4', warnaJenjang(item.jenjang).divider]"><p class="flex items-center gap-1.5 truncate text-sm font-semibold"><AppIcon name="school" :class="['h-4 w-4', warnaJenjang(item.jenjang).text]" />{{ item.namaSekolah }}</p><p class="mt-2 line-clamp-2 text-xs leading-relaxed text-slate-500">{{ item.mapelAjar.join(', ') }}</p></div></NuxtLink></div>
+      <div v-else class="rounded-2xl border border-dashed border-slate-300 bg-white py-12 text-center dark:border-slate-700 dark:bg-slate-800"><AppIcon name="search" class="mx-auto mb-3 h-6 w-6 text-slate-400" /><p class="font-semibold">Kelas tidak ditemukan</p><p class="mt-1 text-xs text-slate-500">Coba ubah kata kunci atau filter.</p></div>
+    </template>
   </div>
 </template>
 
 <script setup>
-import { doc, getDoc } from "firebase/firestore";
-definePageMeta({ middleware: "auth" });
-
-const { db } = useFirebase();
-const { user } = useAuth();
-
-const loading = ref(true);
-const kelasAjar = ref([]);
-const mapelAjar = ref([]);
-
-onMounted(async () => {
-  if (user.value) {
-    const docRef = doc(db, "pengaturanGuru", user.value.uid);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      kelasAjar.value = data.kelasAjar || [];
-      mapelAjar.value = data.mapelAjar || [];
-    }
-  }
-  loading.value = false;
-});
+import { doc, getDoc } from 'firebase/firestore'
+definePageMeta({ middleware: 'auth' })
+const { db } = useFirebase()
+const { user } = useAuth()
+const loading = ref(true)
+const penugasan = ref([])
+const searchQuery = ref('')
+const filterJenjang = ref('semua')
+const filterMapel = ref('semua')
+const urutanJenjang = ['SD', 'SMP', 'SMA/SMK']
+const kartuKelas = computed(() => penugasan.value
+  .flatMap(tugas => tugas.kelasAjar.map(kelas => ({ assignmentId: tugas.id, jenjang: tugas.jenjang === 'SMK' || tugas.jenjang === 'SMA' ? 'SMA/SMK' : tugas.jenjang, namaSekolah: tugas.namaSekolah, kelas, mapelAjar: tugas.mapelAjar })))
+  .sort((a, b) => urutanJenjang.indexOf(a.jenjang) - urutanJenjang.indexOf(b.jenjang) || a.namaSekolah.localeCompare(b.namaSekolah, 'id') || Number(a.kelas) - Number(b.kelas)))
+const daftarMapel = computed(() => [...new Set(penugasan.value.flatMap(t => t.mapelAjar))].sort())
+const filteredKartu = computed(() => { const q = searchQuery.value.trim().toLowerCase(); return kartuKelas.value.filter(item => (filterJenjang.value === 'semua' || item.jenjang === filterJenjang.value) && (filterMapel.value === 'semua' || item.mapelAjar.includes(filterMapel.value)) && (!q || `${item.jenjang} kelas ${item.kelas} ${item.namaSekolah} ${item.mapelAjar.join(' ')}`.toLowerCase().includes(q))) })
+const adaFilter = computed(() => searchQuery.value || filterJenjang.value !== 'semua' || filterMapel.value !== 'semua')
+const resetFilter = () => { searchQuery.value = ''; filterJenjang.value = 'semua'; filterMapel.value = 'semua' }
+const kelasUrl = item => ({ path: `/dashboard/kelas/${item.kelas}`, query: { assignment: item.assignmentId, jenjang: item.jenjang, sekolah: item.namaSekolah, mapel: item.mapelAjar[0] || '' } })
+const warnaJenjang = (jenjang) => {
+  if (jenjang === 'SMP') return { card: 'border-purple-200 hover:border-purple-400 dark:border-purple-900/70', decoration: 'bg-purple-50 dark:bg-purple-900/20', number: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300', badge: 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300', arrow: 'border-purple-200 text-purple-500 dark:border-purple-900', divider: 'border-purple-100 dark:border-purple-900/50', text: 'text-purple-500' }
+  if (jenjang === 'SMA/SMK') return { card: 'border-amber-200 hover:border-amber-400 dark:border-amber-900/70', decoration: 'bg-amber-50 dark:bg-amber-900/20', number: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300', badge: 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300', arrow: 'border-amber-200 text-amber-600 dark:border-amber-900', divider: 'border-amber-100 dark:border-amber-900/50', text: 'text-amber-500' }
+  return { card: 'border-sky-200 hover:border-sky-400 dark:border-sky-900/70', decoration: 'bg-sky-50 dark:bg-sky-900/20', number: 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300', badge: 'bg-sky-100 text-sky-700 dark:bg-sky-900/50 dark:text-sky-300', arrow: 'border-sky-200 text-sky-600 dark:border-sky-900', divider: 'border-sky-100 dark:border-sky-900/50', text: 'text-sky-500' }
+}
+onMounted(async () => { try { if (user.value) { const snap = await getDoc(doc(db, 'pengaturanGuru', user.value.uid)); if (snap.exists()) { const data = snap.data(); penugasan.value = data.penugasan?.length ? data.penugasan : (data.kelasAjar?.length ? [{ id: 'legacy', jenjang: 'SD', namaSekolah: 'Sekolah Saya', kelasAjar: data.kelasAjar, mapelAjar: data.mapelAjar || [] }] : []) } } } finally { loading.value = false } })
 </script>
