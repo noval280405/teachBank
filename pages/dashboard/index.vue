@@ -32,7 +32,7 @@ const filterJenjang = ref('semua')
 const filterMapel = ref('semua')
 const urutanJenjang = ['SD', 'SMP', 'SMA/SMK']
 const kartuKelas = computed(() => penugasan.value
-  .flatMap(tugas => tugas.kelasAjar.map(kelas => ({ assignmentId: tugas.id, jenjang: tugas.jenjang === 'SMK' || tugas.jenjang === 'SMA' ? 'SMA/SMK' : tugas.jenjang, namaSekolah: tugas.namaSekolah, kelas, mapelAjar: tugas.mapelAjar })))
+  .flatMap(tugas => tugas.kelasAjar.map(kelas => ({ assignmentId: tugas.id, jenjang: tugas.jenjang === 'SMK' || tugas.jenjang === 'SMA' ? 'SMA/SMK' : tugas.jenjang, namaSekolah: tugas.namaSekolah, kelas, mapelAjar: tugas.mapelPerKelas?.[kelas] || tugas.mapelAjar || [] })))
   .sort((a, b) => urutanJenjang.indexOf(a.jenjang) - urutanJenjang.indexOf(b.jenjang) || a.namaSekolah.localeCompare(b.namaSekolah, 'id') || Number(a.kelas) - Number(b.kelas)))
 const daftarMapel = computed(() => [...new Set(penugasan.value.flatMap(t => t.mapelAjar))].sort())
 const filteredKartu = computed(() => { const q = searchQuery.value.trim().toLowerCase(); return kartuKelas.value.filter(item => (filterJenjang.value === 'semua' || item.jenjang === filterJenjang.value) && (filterMapel.value === 'semua' || item.mapelAjar.includes(filterMapel.value)) && (!q || `${item.jenjang} kelas ${item.kelas} ${item.namaSekolah} ${item.mapelAjar.join(' ')}`.toLowerCase().includes(q))) })

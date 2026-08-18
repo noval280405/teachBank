@@ -515,7 +515,7 @@ const loadPengaturanGuru = async () => {
     if (docSnap.exists()) {
       const data = docSnap.data();
       const tugas = data.penugasan?.find((item) => item.id === assignmentId.value);
-      mapelAjar.value = tugas?.mapelAjar || data.mapelAjar || [];
+      mapelAjar.value = tugas?.mapelPerKelas?.[kelasId] || tugas?.mapelAjar || data.mapelAjar || [];
 
       const queryMapel = route.query.mapel;
       if (queryMapel && mapelAjar.value.includes(queryMapel)) {
