@@ -48,7 +48,7 @@
         class="bg-white dark:bg-slate-800 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-5"
       >
         <div class="flex items-center gap-3"><span class="grid h-10 w-10 place-items-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-900/30 dark:text-brand-300"><AppIcon name="school" class="h-5 w-5" /></span><div><h2 class="font-bold">Identitas ujian</h2><p class="text-xs text-slate-500 dark:text-slate-400">Informasi ini akan tampil pada kop lembar ujian.</p></div></div>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
           <div>
             <label
               class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1"
@@ -85,7 +85,14 @@
               placeholder="2025/2026"
             />
           </div>
+          <div><label class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Semester</label><select v-model="infoUjian.semester" class="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-sm outline-none focus:border-brand-500 dark:border-slate-600 dark:bg-slate-900/40"><option value="">Tidak dicantumkan</option><option value="Ganjil">Ganjil</option><option value="Genap">Genap</option></select></div>
+          <div><label class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Alamat sekolah</label><input v-model="infoUjian.alamat" type="text" class="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-sm outline-none focus:border-brand-500 dark:border-slate-600 dark:bg-slate-900/40" placeholder="Jl. Pendidikan No. 1" /></div>
+          <div><label class="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">Kota / Kabupaten</label><input v-model="infoUjian.wilayah" type="text" class="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-sm outline-none focus:border-brand-500 dark:border-slate-600 dark:bg-slate-900/40" placeholder="Kota Tangerang" /></div>
         </div>
+        <div class="grid gap-3 sm:grid-cols-2">
+          <div v-for="posisi in ['kiri', 'kanan']" :key="posisi" class="rounded-xl border border-dashed border-slate-300 p-3 dark:border-slate-600"><p class="mb-2 text-xs font-bold capitalize text-slate-600 dark:text-slate-300">Logo {{ posisi }}</p><div class="flex items-center gap-3"><img v-if="infoUjian[`logo${posisi[0].toUpperCase()}${posisi.slice(1)}Url`]" :src="infoUjian[`logo${posisi[0].toUpperCase()}${posisi.slice(1)}Url`]" class="h-14 w-14 rounded-lg border bg-white object-contain p-1" /><span v-else class="grid h-14 w-14 place-items-center rounded-lg bg-slate-100 text-slate-400 dark:bg-slate-700"><AppIcon name="image" class="h-5 w-5" /></span><div class="flex flex-wrap gap-2"><label class="cursor-pointer rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600"><input type="file" accept="image/png,image/jpeg,image/webp" class="hidden" @change="unggahLogo($event, posisi)" />{{ uploadingLogo === posisi ? 'Mengunggah...' : 'Pilih logo' }}</label><button v-if="infoUjian[`logo${posisi[0].toUpperCase()}${posisi.slice(1)}Url`]" type="button" class="rounded-lg px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50" @click="hapusLogo(posisi)">Hapus</button></div></div></div>
+        </div>
+        <div class="flex items-center justify-between gap-3"><p class="text-xs text-slate-500">Kop tersimpan khusus untuk sekolah ini dan otomatis digunakan pada cetak berikutnya.</p><button type="button" :disabled="savingKop || uploadingLogo" @click="simpanKop" class="inline-flex shrink-0 items-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-xs font-semibold text-white hover:bg-brand-700 disabled:opacity-50"><AppIcon name="save" class="h-4 w-4" />{{ savingKop ? 'Menyimpan...' : 'Simpan kop' }}</button></div>
       </div>
 
       <!-- Panel Kontrol Pengaturan Jumlah Soal -->
@@ -363,6 +370,7 @@ import {
   getDocs,
   doc,
   getDoc,
+  setDoc,
   updateDoc,
   addDoc,
   increment,
@@ -397,6 +405,10 @@ const acakOpsiPaketB = ref(true);
 const watermark = ref("");
 const riwayatUjian = ref([]);
 const modeSimulasi = ref(false);
+const savingKop = ref(false);
+const uploadingLogo = ref("");
+
+const kopDocId = computed(() => `${user.value?.uid || "guru"}_${assignmentId.value}`.replace(/[^a-zA-Z0-9_-]/g, "_"));
 
 const loadPengaturan = async () => {
   if (!user.value) return;
@@ -407,6 +419,8 @@ const loadPengaturan = async () => {
       const tugas = data.penugasan?.find((item) => item.id === assignmentId.value);
       mapelAjar.value = tugas?.mapelPerKelas?.[kelasId] || tugas?.mapelAjar || data.mapelAjar || [];
       infoUjian.value.namaSekolah = tugas?.namaSekolah || schoolName.value;
+      const kopSnap = await getDoc(doc(db, "kopUjian", kopDocId.value));
+      if (kopSnap.exists()) infoUjian.value = { ...infoUjian.value, ...kopSnap.data() };
 
       const mapelDariUrl = route.query.mapel;
       if (mapelDariUrl && mapelAjar.value.includes(mapelDariUrl)) {
@@ -438,7 +452,58 @@ const infoUjian = ref({
   namaSekolah: "SD NEGERI UTAMA",
   namaUjian: "Penilaian Tengah Semester (PTS)",
   tahunAjaran: "2025/2026",
+  semester: "Ganjil",
+  alamat: "",
+  wilayah: "",
+  logoKiriUrl: "",
+  logoKananUrl: "",
 });
+
+const simpanKop = async () => {
+  if (!user.value) return;
+  savingKop.value = true;
+  try {
+    await setDoc(doc(db, "kopUjian", kopDocId.value), { ...infoUjian.value, userId: user.value.uid, assignmentId: assignmentId.value, updatedAt: new Date() }, { merge: true });
+    alert("Pengaturan kop berhasil disimpan.");
+  } catch (error) {
+    console.error("Gagal menyimpan kop:", error);
+    alert("Pengaturan kop belum berhasil disimpan.");
+  } finally { savingKop.value = false; }
+};
+
+const logoKey = posisi => `logo${posisi[0].toUpperCase()}${posisi.slice(1)}Url`;
+const kompresLogo = file => new Promise((resolve, reject) => {
+  const objectUrl = URL.createObjectURL(file);
+  const image = new Image();
+  image.onload = () => {
+    const batas = 240;
+    const scale = Math.min(1, batas / image.naturalWidth, batas / image.naturalHeight);
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const context = canvas.getContext("2d");
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    URL.revokeObjectURL(objectUrl);
+    resolve(canvas.toDataURL("image/jpeg", 0.9));
+  };
+  image.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error("File gambar tidak dapat dibaca")); };
+  image.src = objectUrl;
+});
+const unggahLogo = async (event, posisi) => {
+  const file = event.target.files?.[0];
+  if (!file || !user.value) return;
+  if (!file.type.startsWith("image/")) { alert("Pilih file gambar PNG, JPG, atau WEBP."); event.target.value = ""; return; }
+  if (file.size > 5 * 1024 * 1024) { alert("Ukuran logo maksimal 5 MB."); event.target.value = ""; return; }
+  uploadingLogo.value = posisi;
+  try {
+    infoUjian.value[logoKey(posisi)] = await kompresLogo(file);
+    await setDoc(doc(db, "kopUjian", kopDocId.value), { ...infoUjian.value, userId: user.value.uid, assignmentId: assignmentId.value, updatedAt: new Date() }, { merge: true });
+  } catch (error) { console.error("Gagal memproses logo:", error); alert(`Logo gagal diproses: ${error?.message || "format file tidak didukung"}.`); }
+  finally { uploadingLogo.value = ""; event.target.value = ""; }
+};
+const hapusLogo = posisi => { infoUjian.value[logoKey(posisi)] = ""; };
 
 const filteredListPG = computed(() => {
   if (!searchQuery.value.trim()) return listSoalPG.value;

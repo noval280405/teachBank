@@ -43,12 +43,15 @@
         <div class="relative z-10">
         
         <!-- Kop Ujian Sekolah (Dinamis dari Data Input) -->
-        <div class="border-b-4 border-double border-black pb-3 mb-4 text-center">
-          <h2 class="text-xl font-bold uppercase tracking-wider">{{ printData.infoUjian?.namaSekolah || 'SD NEGERI UTAMA' }}</h2>
-          <h3 class="text-base font-bold uppercase tracking-wide">
-            {{ printData.infoUjian?.namaUjian || 'PENILAIAN TENGAH SEMESTER (PTS)' }}
-          </h3>
-          <p class="text-xs italic mt-0.5">Tahun Ajaran {{ printData.infoUjian?.tahunAjaran || '2025/2026' }}</p>
+        <div class="border-b-4 border-double border-black pb-3 mb-4">
+          <div class="grid grid-cols-[64px_1fr_64px] items-center gap-3 text-center">
+            <div class="flex justify-center"><img v-if="printData.infoUjian?.logoKiriUrl" :src="printData.infoUjian.logoKiriUrl" class="h-14 w-14 object-contain" alt="Logo kiri" /></div>
+            <div><h2 class="text-xl font-bold uppercase tracking-wider">{{ printData.infoUjian?.namaSekolah || 'SD NEGERI UTAMA' }}</h2>
+          <h3 class="text-base font-bold uppercase tracking-wide">{{ printData.infoUjian?.namaUjian || 'PENILAIAN TENGAH SEMESTER (PTS)' }}</h3>
+          <p class="text-xs italic mt-0.5">Tahun Ajaran {{ printData.infoUjian?.tahunAjaran || '2025/2026' }}<span v-if="printData.infoUjian?.semester"> · Semester {{ printData.infoUjian.semester }}</span></p>
+          <p v-if="printData.infoUjian?.alamat || printData.infoUjian?.wilayah" class="mt-1 text-[10px] not-italic">{{ [printData.infoUjian.alamat, printData.infoUjian.wilayah].filter(Boolean).join(', ') }}</p></div>
+            <div class="flex justify-center"><img v-if="printData.infoUjian?.logoKananUrl" :src="printData.infoUjian.logoKananUrl" class="h-14 w-14 object-contain" alt="Logo kanan" /></div>
+          </div>
           <p v-if="printData.pakets?.length > 1" class="mt-1 text-sm font-black">PAKET {{ paketAktif }}</p>
         </div>
 
@@ -295,11 +298,23 @@ const imageForWord = async (source) => {
 
 const downloadWord = async () => {
   const data = activeData.value
+  const info = printData.value.infoUjian || {}
+  const [logoKiri, logoKanan] = await Promise.all([imageForWord(info.logoKiriUrl), imageForWord(info.logoKananUrl)])
+  const tanpaGaris = { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE }, insideHorizontal: { style: BorderStyle.NONE }, insideVertical: { style: BorderStyle.NONE } }
+  const logoCell = (logo, width) => {
+    const scale = logo ? Math.min(1, 58 / logo.width, 58 / logo.height) : 1
+    return new TableCell({ width: { size: width, type: WidthType.PERCENTAGE }, verticalAlign: VerticalAlign.CENTER, borders: tanpaGaris, children: [new Paragraph({ children: logo ? [new ImageRun({ type: 'png', data: logo.data, transformation: { width: Math.round(logo.width * scale), height: Math.round(logo.height * scale) } })] : [], alignment: AlignmentType.CENTER })] })
+  }
+  const kopTengah = new TableCell({ width: { size: 72, type: WidthType.PERCENTAGE }, verticalAlign: VerticalAlign.CENTER, borders: tanpaGaris, children: [
+    new Paragraph({ children: [new TextRun({ text: (info.namaSekolah || 'SEKOLAH').toUpperCase(), bold: true, size: 30, color: '000000', font: 'Times New Roman' })], alignment: AlignmentType.CENTER, spacing: { after: 50 } }),
+    new Paragraph({ children: [new TextRun({ text: (info.namaUjian || 'UJIAN').toUpperCase(), bold: true, size: 23, color: '000000', font: 'Times New Roman' })], alignment: AlignmentType.CENTER, spacing: { after: 25 } }),
+    new Paragraph({ children: [new TextRun({ text: `Tahun Ajaran ${info.tahunAjaran || '-'}${info.semester ? ` · Semester ${info.semester}` : ''}`, italics: true, size: 18, color: '000000', font: 'Times New Roman' })], alignment: AlignmentType.CENTER }),
+    ...(info.alamat || info.wilayah ? [new Paragraph({ children: [new TextRun({ text: [info.alamat, info.wilayah].filter(Boolean).join(', '), size: 16, color: '000000', font: 'Times New Roman' })], alignment: AlignmentType.CENTER, spacing: { before: 30 } })] : []),
+  ] })
   const cell = (label, value, width, writingRow = false) => new TableCell({ width: { size: width, type: WidthType.PERCENTAGE }, verticalAlign: VerticalAlign.CENTER, margins: { top: writingRow ? 190 : 145, bottom: writingRow ? 190 : 145, left: 140, right: 140 }, children: [new Paragraph({ children: [new TextRun({ text: label, bold: true, size: 18 }), new TextRun({ text: `: ${value}`, size: 18 })], spacing: { line: 280 } })] })
   const children = [
-    new Paragraph({ children: [new TextRun({ text: (printData.value.infoUjian?.namaSekolah || 'SEKOLAH').toUpperCase(), bold: true, size: 30, color: '000000', font: 'Times New Roman' })], alignment: AlignmentType.CENTER, spacing: { after: 50 } }),
-    new Paragraph({ children: [new TextRun({ text: (printData.value.infoUjian?.namaUjian || 'UJIAN').toUpperCase(), bold: true, size: 23, color: '000000', font: 'Times New Roman' })], alignment: AlignmentType.CENTER, spacing: { after: 25 } }),
-    new Paragraph({ children: [new TextRun({ text: `Tahun Ajaran ${printData.value.infoUjian?.tahunAjaran || '-'}`, italics: true, size: 18, color: '000000', font: 'Times New Roman' })], alignment: AlignmentType.CENTER, border: { bottom: { style: BorderStyle.DOUBLE, size: 8, color: '000000', space: 6 } } }),
+    new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, borders: tanpaGaris, rows: [new TableRow({ children: [logoCell(logoKiri, 14), kopTengah, logoCell(logoKanan, 14)] })] }),
+    new Paragraph({ children: [], spacing: { before: 30 }, border: { bottom: { style: BorderStyle.DOUBLE, size: 8, color: '000000', space: 3 } } }),
     new Paragraph({ children: [new TextRun({ text: '', size: 6 })], spacing: { before: 80, after: 100, line: 100 } }),
     new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, borders: { top: { style: BorderStyle.SINGLE, size: 8, color: '000000' }, bottom: { style: BorderStyle.SINGLE, size: 8, color: '000000' }, left: { style: BorderStyle.SINGLE, size: 8, color: '000000' }, right: { style: BorderStyle.SINGLE, size: 8, color: '000000' }, insideHorizontal: { style: BorderStyle.NONE }, insideVertical: { style: BorderStyle.NONE } }, rows: [
       new TableRow({ children: [cell('MATA PELAJARAN', printData.value.mapel || '-', 50), cell('HARI / TANGGAL', '................................', 50)] }),
