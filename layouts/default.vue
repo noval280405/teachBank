@@ -28,7 +28,7 @@
 
           <!-- User Profile & Logout -->
           <div v-if="user" class="ml-1 flex items-center gap-2 border-l border-slate-200 pl-3 dark:border-slate-800">
-            <span class="grid h-9 w-9 place-items-center rounded-xl bg-brand-50 text-xs font-bold uppercase text-brand-700 ring-1 ring-brand-100 dark:bg-brand-900/30 dark:text-brand-300 dark:ring-brand-800">{{ userInitial }}</span>
+            <NuxtLink to="/akun" class="grid h-9 w-9 place-items-center rounded-xl bg-brand-50 text-xs font-bold uppercase text-brand-700 ring-1 ring-brand-100 hover:ring-brand-300 dark:bg-brand-900/30 dark:text-brand-300 dark:ring-brand-800" aria-label="Buka pengaturan akun">{{ userInitial }}</NuxtLink>
             <div class="hidden max-w-40 lg:block"><p class="truncate text-xs font-bold">Akun Guru</p><p class="truncate text-[10px] text-slate-500">{{ user.email }}</p></div>
             <button 
               @click="logout" 
@@ -48,6 +48,7 @@
     </main>
 
     <nav v-if="user" class="fixed bottom-4 left-1/2 z-40 flex -translate-x-1/2 items-center gap-1 rounded-2xl border border-slate-200/80 bg-white/90 p-1.5 shadow-xl backdrop-blur-xl dark:border-slate-700 dark:bg-slate-900/90 sm:hidden" aria-label="Navigasi mobile"><NuxtLink to="/dashboard" :class="mobileNavClass('/dashboard', true)"><AppIcon name="home" class="h-4 w-4" /> Dashboard</NuxtLink><NuxtLink to="/pengaturan" :class="mobileNavClass('/pengaturan')"><AppIcon name="settings" class="h-4 w-4" /> Pengaturan</NuxtLink></nav>
+    <AppToast />
   </div>
 </template>
 

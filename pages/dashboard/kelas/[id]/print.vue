@@ -38,7 +38,7 @@
       </div>
 
       <!-- Lembar Kertas Ujian (Ukuran A4) -->
-      <div id="lembar-ujian" class="kertas-ujian relative max-w-[210mm] mx-auto bg-white p-[12mm] sm:p-[15mm] border print:border-none print:p-0 shadow-xl print:shadow-none text-black leading-relaxed">
+      <div id="lembar-ujian" :style="{ fontSize: `${printData.layoutUjian?.fontSize || 11}pt` }" :class="['kertas-ujian relative mx-auto bg-white p-[12mm] sm:p-[15mm] border print:border-none print:p-0 shadow-xl print:shadow-none text-black leading-relaxed', printData.layoutUjian?.orientasi === 'landscape' ? 'max-w-[297mm]' : 'max-w-[210mm]']">
         <div v-if="printData.watermark" class="pointer-events-none absolute inset-0 z-0 flex items-center justify-center overflow-hidden"><span class="-rotate-45 select-none whitespace-nowrap text-7xl font-black tracking-widest text-slate-900/[0.07]">{{ printData.watermark }}</span></div>
         <div class="relative z-10">
         
@@ -63,13 +63,13 @@
                 <td class="py-1 font-bold w-28">MATA PELAJARAN</td>
                 <td class="py-1">: {{ printData.mapel || '-' }}</td>
                 <td class="py-1 font-bold w-28">HARI / TANGGAL</td>
-                <td class="py-1">: .......................................</td>
+                <td class="py-1">: {{ tanggalUjian }}</td>
               </tr>
               <tr>
                 <td class="py-1 font-bold">KELAS</td>
                 <td class="py-1">: {{ printData.kelas }} {{ printData.jenjang || 'SD' }}</td>
                 <td class="py-1 font-bold">WAKTU</td>
-                <td class="py-1">: 90 Menit</td>
+                <td class="py-1">: {{ printData.layoutUjian?.durasi || 90 }} Menit</td>
               </tr>
               <tr>
                 <td class="py-1 font-bold">NAMA SISWA</td>
@@ -83,13 +83,13 @@
 
         <!-- Bagian I: Pilihan Ganda -->
         <div v-if="activeData.pg && activeData.pg.length > 0" class="mb-6 font-sans">
-          <p class="font-bold text-xs mb-3">I. Berilah tanda silang (X) pada huruf a, b, c, atau d di depan jawaban yang paling benar!</p>
+          <p class="font-bold text-xs mb-3">I. {{ printData.layoutUjian?.instruksiPG || 'Berilah tanda silang (X) pada huruf a, b, c, atau d di depan jawaban yang paling benar!' }}</p>
           
           <div :class="[duaKolom ? 'columns-1 sm:columns-2 print:columns-2 gap-6' : 'space-y-3']">
             <div 
               v-for="(soal, index) in activeData.pg" 
               :key="soal.id" 
-              class="break-inside-avoid mb-4 text-xs leading-snug"
+              :class="['break-inside-avoid text-xs leading-snug', jarakSoal]"
             >
               <!-- Pertanyaan -->
               <div class="flex items-start gap-1.5 font-medium">
@@ -121,7 +121,7 @@
 
         <!-- Bagian II: Essay / Uraian -->
         <div v-if="activeData.essay && activeData.essay.length > 0" class="mb-6 font-sans break-inside-avoid">
-          <p class="font-bold text-xs mb-3">II. Jawablah pertanyaan-pertanyaan di bawah ini dengan singkat dan tepat!</p>
+          <p class="font-bold text-xs mb-3">II. {{ printData.layoutUjian?.instruksiEssay || 'Jawablah pertanyaan-pertanyaan di bawah ini dengan singkat dan tepat!' }}</p>
           
           <div class="space-y-4">
             <div 
@@ -147,12 +147,13 @@
 
               <!-- Garis Tempat Jawaban Siswa -->
               <div class="pl-7 mt-2 space-y-2">
-                <div class="border-b border-dotted border-slate-400 h-4 w-full"></div>
-                <div class="border-b border-dotted border-slate-400 h-4 w-full"></div>
+                <div v-for="line in (printData.layoutUjian?.essayLines || 4)" :key="line" class="border-b border-dotted border-slate-400 h-5 w-full"></div>
               </div>
             </div>
           </div>
         </div>
+
+        <footer v-if="printData.layoutUjian?.footer" class="mt-8 border-t border-slate-300 pt-2 text-center font-sans text-[10px] text-slate-500">{{ printData.layoutUjian.footer }}</footer>
 
         <!-- Lembar Kunci Jawaban TERPISAH (Khusus Pegangan Guru) -->
         <div v-if="tampilkanKunci" class="break-before-page pt-6 border-t-2 border-dashed border-black font-sans">
@@ -201,7 +202,7 @@
 </template>
 
 <script setup>
-import { Document, Packer, Paragraph, TextRun, AlignmentType, ImageRun, Math as OfficeMath, MathRun, MathFraction, MathRadical, MathSuperScript, MathSubScript, MathSubSuperScript, Table, TableRow, TableCell, WidthType, BorderStyle, VerticalAlign } from 'docx'
+import { Document, Packer, Paragraph, TextRun, AlignmentType, ImageRun, Math as OfficeMath, MathRun, MathFraction, MathRadical, MathSuperScript, MathSubScript, MathSubSuperScript, Table, TableRow, TableCell, WidthType, BorderStyle, VerticalAlign, PageOrientation } from 'docx'
 
 setPageLayout(false)
 
@@ -218,6 +219,8 @@ const duaKolom = ref(true)
 const tampilkanKunci = ref(false)
 const paketAktif = ref('A')
 const activeData = computed(() => printData.value.pakets?.find(p => p.label === paketAktif.value) || printData.value)
+const jarakSoal = computed(() => ({ rapat: 'mb-2', normal: 'mb-4', lega: 'mb-7' }[printData.value.layoutUjian?.spacing] || 'mb-4'))
+const tanggalUjian = computed(() => { const value = printData.value.layoutUjian?.tanggal; if (!value) return '.......................................'; const date = new Date(`${value}T00:00:00`); return new Intl.DateTimeFormat('id-ID', { dateStyle: 'long' }).format(date) })
 
 const triggerPrint = () => {
   window.print()
@@ -317,11 +320,11 @@ const downloadWord = async () => {
     new Paragraph({ children: [], spacing: { before: 30 }, border: { bottom: { style: BorderStyle.DOUBLE, size: 8, color: '000000', space: 3 } } }),
     new Paragraph({ children: [new TextRun({ text: '', size: 6 })], spacing: { before: 80, after: 100, line: 100 } }),
     new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, borders: { top: { style: BorderStyle.SINGLE, size: 8, color: '000000' }, bottom: { style: BorderStyle.SINGLE, size: 8, color: '000000' }, left: { style: BorderStyle.SINGLE, size: 8, color: '000000' }, right: { style: BorderStyle.SINGLE, size: 8, color: '000000' }, insideHorizontal: { style: BorderStyle.NONE }, insideVertical: { style: BorderStyle.NONE } }, rows: [
-      new TableRow({ children: [cell('MATA PELAJARAN', printData.value.mapel || '-', 50), cell('HARI / TANGGAL', '................................', 50)] }),
-      new TableRow({ children: [cell('KELAS', `${printData.value.kelas} ${printData.value.jenjang || 'SD'}`, 50), cell('WAKTU', '90 Menit', 50)] }),
+      new TableRow({ children: [cell('MATA PELAJARAN', printData.value.mapel || '-', 50), cell('HARI / TANGGAL', tanggalUjian.value, 50)] }),
+      new TableRow({ children: [cell('KELAS', `${printData.value.kelas} ${printData.value.jenjang || 'SD'}`, 50), cell('WAKTU', `${printData.value.layoutUjian?.durasi || 90} Menit`, 50)] }),
       new TableRow({ children: [cell('NAMA SISWA', '................................', 50, true), cell('NOMOR ABSEN', '................', 50, true)] }),
     ] }),
-    new Paragraph({ children: [new TextRun({ text: 'I. Berilah tanda silang (X) pada huruf a, b, c, atau d di depan jawaban yang paling benar!', bold: true, size: 18 })], spacing: { before: 260, after: 100 } }),
+    new Paragraph({ children: [new TextRun({ text: `I. ${printData.value.layoutUjian?.instruksiPG || 'Berilah tanda silang (X) pada huruf a, b, c, atau d di depan jawaban yang paling benar!'}`, bold: true, size: 18 })], spacing: { before: 260, after: 100 } }),
   ]
   for (const [index, soal] of data.pg.entries()) {
     children.push(new Paragraph({ children: [new TextRun({ text: `${index + 1}. `, bold: true, size: 18 }), ...wordRuns(soal.pertanyaan, true)], spacing: { before: 140, after: 40 }, keepNext: true }))
@@ -329,19 +332,17 @@ const downloadWord = async () => {
     for (const key of ['a','b','c','d']) if (soal.opsi?.[key]) { children.push(new Paragraph({ children: [new TextRun({ text: `      ${key.toUpperCase()}. `, bold: true, size: 18 }), ...wordRuns(soal.opsi[key])], spacing: { after: 20 } })); const optionImage = await imageForWord(soal.opsiGambar?.[key]); if (optionImage) children.push(new Paragraph({ children: [new ImageRun({ type: 'png', data: optionImage.data, transformation: { width: optionImage.width, height: optionImage.height } })], indent: { left: 500 } })) }
   }
   if (data.essay.length) {
-    children.push(new Paragraph({ children: [new TextRun({ text: 'II. Jawablah pertanyaan-pertanyaan di bawah ini dengan singkat dan tepat!', bold: true, size: 18 })], spacing: { before: 360, after: 180 } }))
+    children.push(new Paragraph({ children: [new TextRun({ text: `II. ${printData.value.layoutUjian?.instruksiEssay || 'Jawablah pertanyaan-pertanyaan di bawah ini dengan singkat dan tepat!'}`, bold: true, size: 18 })], spacing: { before: 360, after: 180 } }))
     for (const [index, soal] of data.essay.entries()) {
       children.push(new Paragraph({ children: [new TextRun({ text: `${data.pg.length + index + 1}. `, bold: true, size: 18 }), ...wordRuns(soal.pertanyaan)], spacing: { before: 260, after: 160, line: 300 }, keepNext: true }))
       const image = await imageForWord(soal.imageUrl)
       if (image) children.push(new Paragraph({ children: [new ImageRun({ type: 'png', data: image.data, transformation: { width: image.width, height: image.height } })], alignment: AlignmentType.CENTER, spacing: { before: 80, after: 180 } }))
-      children.push(
-        new Paragraph({ text: '........................................................................................................................................', spacing: { before: 80, after: 100 } }),
-        new Paragraph({ text: '........................................................................................................................................', spacing: { after: 100 } }),
-        new Paragraph({ text: '........................................................................................................................................', spacing: { after: 240 } }),
-      )
+      const jumlahBaris = Math.min(12, Math.max(2, Number(printData.value.layoutUjian?.essayLines) || 4))
+      for (let line = 0; line < jumlahBaris; line++) children.push(new Paragraph({ text: '........................................................................................................................................', spacing: { before: line === 0 ? 80 : 0, after: line === jumlahBaris - 1 ? 240 : 120 } }))
     }
   }
-  const documentWord = new Document({ styles: { default: { document: { run: { font: 'Arial', size: 18, color: '000000' }, paragraph: { spacing: { line: 240 } } } } }, sections: [{ properties: { page: { margin: { top: 680, right: 850, bottom: 680, left: 850 } } }, children }] })
+  if (printData.value.layoutUjian?.footer) children.push(new Paragraph({ text: printData.value.layoutUjian.footer, alignment: AlignmentType.CENTER, spacing: { before: 300 }, border: { top: { style: BorderStyle.SINGLE, size: 4, color: 'B0B0B0', space: 4 } } }))
+  const documentWord = new Document({ styles: { default: { document: { run: { font: 'Arial', size: Math.max(18, Number(printData.value.layoutUjian?.fontSize || 11) * 2), color: '000000' }, paragraph: { spacing: { line: 240 } } } } }, sections: [{ properties: { page: { size: { orientation: printData.value.layoutUjian?.orientasi === 'landscape' ? PageOrientation.LANDSCAPE : PageOrientation.PORTRAIT }, margin: { top: 680, right: 850, bottom: 680, left: 850 } } }, children }] })
   const blob = await Packer.toBlob(documentWord)
   const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = `${printData.value.mapel || 'ujian'}-paket-${paketAktif.value}.docx`; link.click(); URL.revokeObjectURL(url)
 }
@@ -351,6 +352,11 @@ onMounted(() => {
   if (data) {
     try {
       printData.value = JSON.parse(data)
+      duaKolom.value = Number(printData.value.layoutUjian?.kolom || 2) === 2
+      localStorage.removeItem('teachbank_print_payload')
+      const style = document.createElement('style')
+      style.textContent = `@media print { @page { size: A4 ${printData.value.layoutUjian?.orientasi === 'landscape' ? 'landscape' : 'portrait'}; margin: 12mm 15mm; } }`
+      document.head.appendChild(style)
     } catch (e) {
       console.error('Gagal membaca data cetak:', e)
     }
@@ -361,7 +367,6 @@ onMounted(() => {
 <style>
 @media print {
   @page {
-    size: A4 portrait;
     margin: 12mm 15mm;
   }
   

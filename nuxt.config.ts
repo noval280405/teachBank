@@ -11,5 +11,10 @@ export default defineNuxtConfig({
     preference: 'system',
     fallback: 'light'
   },
+  runtimeConfig: {
+    public: {
+      firebaseAppCheckKey: process.env.NUXT_PUBLIC_FIREBASE_APP_CHECK_KEY || ''
+    }
+  },
   css: ['~/assets/css/main.css']
 })

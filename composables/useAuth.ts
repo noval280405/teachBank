@@ -1,5 +1,5 @@
 // composables/useAuth.ts
-import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth'
+import { onAuthStateChanged, signInWithEmailAndPassword, signOut, sendEmailVerification, sendPasswordResetEmail, updatePassword, deleteUser, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth'
 import type { User } from 'firebase/auth'
 
 export const useAuth = () => {
@@ -40,5 +40,18 @@ export const useAuth = () => {
     return navigateTo('/login')
   }
 
-  return { user, loading, initAuth, login, logout }
+  const kirimVerifikasi = async () => { if (user.value && !user.value.emailVerified) await sendEmailVerification(user.value) }
+  const kirimResetPassword = async (email?: string) => {
+    const target = email || user.value?.email
+    if (!target) throw new Error('Email tidak tersedia')
+    await sendPasswordResetEmail(auth, target)
+  }
+  const gantiPassword = async (passwordBaru: string) => { if (!user.value) throw new Error('Belum login'); await updatePassword(user.value, passwordBaru) }
+  const autentikasiUlang = async (password: string) => {
+    if (!user.value?.email) throw new Error('Email tidak tersedia')
+    await reauthenticateWithCredential(user.value, EmailAuthProvider.credential(user.value.email, password))
+  }
+  const hapusAkunAuth = async () => { if (!user.value) throw new Error('Belum login'); await deleteUser(user.value); user.value = null }
+
+  return { user, loading, initAuth, login, logout, kirimVerifikasi, kirimResetPassword, gantiPassword, autentikasiUlang, hapusAkunAuth }
 }

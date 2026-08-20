@@ -31,6 +31,8 @@
 
         <p v-if="errorMessage" class="text-red-500 text-sm">{{ errorMessage }}</p>
 
+        <button type="button" @click="handleReset" :disabled="!email" class="text-xs font-semibold text-brand-600 hover:underline disabled:opacity-40">Lupa kata sandi?</button>
+
         <button 
           type="submit" 
           :disabled="isSubmitting"
@@ -44,7 +46,8 @@
 </template>
 
 <script setup>
-const { login } = useAuth()
+const { login, kirimResetPassword } = useAuth()
+const { success } = useToast()
 const email = ref('')
 const password = ref('')
 const errorMessage = ref('')
@@ -61,5 +64,10 @@ const handleLogin = async () => {
   } finally {
     isSubmitting.value = false
   }
+}
+const handleReset = async () => {
+  errorMessage.value = ''
+  try { await kirimResetPassword(email.value); success('Tautan reset kata sandi sudah dikirim ke email Anda.') }
+  catch (err) { errorMessage.value = 'Tautan reset belum dapat dikirim. Periksa alamat email.' }
 }
 </script>

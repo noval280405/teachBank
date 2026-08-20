@@ -2,6 +2,7 @@ import { initializeApp, getApps, type FirebaseApp } from 'firebase/app'
 import { getFirestore, type Firestore } from 'firebase/firestore'
 import { getAuth, type Auth } from 'firebase/auth'
 import { getStorage, type FirebaseStorage } from 'firebase/storage'
+import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check'
 
 const firebaseConfig = {
   apiKey: "AIzaSyAtlns1ykxpb8itm3gMQcp8dgW-Xn3H5y0",
@@ -20,12 +21,18 @@ export const useFirebase = () => {
   const db = useState<Firestore | null>('fb-db', () => null)
   const auth = useState<Auth | null>('fb-auth', () => null)
   const storage = useState<FirebaseStorage | null>('fb-storage', () => null)
+  const appCheckReady = useState<boolean>('fb-app-check-ready', () => false)
 
   // Hanya inisialisasi di browser (client-side)
   if (process.client) {
     if (!db.value) db.value = getFirestore(app)
     if (!auth.value) auth.value = getAuth(app)
     if (!storage.value) storage.value = getStorage(app)
+    const appCheckKey = useRuntimeConfig().public.firebaseAppCheckKey as string
+    if (appCheckKey && !appCheckReady.value) {
+      initializeAppCheck(app, { provider: new ReCaptchaV3Provider(appCheckKey), isTokenAutoRefreshEnabled: true })
+      appCheckReady.value = true
+    }
   }
 
   return { db: db.value!, auth: auth.value!, storage: storage.value! }

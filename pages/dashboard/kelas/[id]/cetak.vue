@@ -95,6 +95,14 @@
         <div class="flex items-center justify-between gap-3"><p class="text-xs text-slate-500">Kop tersimpan khusus untuk sekolah ini dan otomatis digunakan pada cetak berikutnya.</p><button type="button" :disabled="savingKop || uploadingLogo" @click="simpanKop" class="inline-flex shrink-0 items-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-xs font-semibold text-white hover:bg-brand-700 disabled:opacity-50"><AppIcon name="save" class="h-4 w-4" />{{ savingKop ? 'Menyimpan...' : 'Simpan kop' }}</button></div>
       </div>
 
+      <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+        <div class="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center"><div><div class="flex items-center gap-2"><h2 class="font-bold">Template & tata letak ujian</h2><span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500 dark:bg-slate-700">{{ draftStatus }}</span></div><p class="text-xs text-slate-500">Simpan format yang sering digunakan dan atur ruang lembar ujian.</p></div><div class="flex gap-2"><select v-model="templateTerpilih" @change="pakaiTemplate" class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs dark:border-slate-700 dark:bg-slate-900"><option value="">Pilih template…</option><option v-for="item in templateUjian" :key="item.id" :value="item.id">{{ item.nama }}</option></select><button @click="simpanTemplate" class="rounded-xl bg-brand-600 px-3 py-2 text-xs font-semibold text-white">Simpan template</button></div></div>
+        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><label class="text-xs font-medium">Tanggal ujian<input v-model="layoutUjian.tanggal" type="date" class="mt-1 w-full rounded-xl border border-slate-200 bg-transparent px-3 py-2 dark:border-slate-700" /></label><label class="text-xs font-medium">Durasi (menit)<input v-model.number="layoutUjian.durasi" type="number" min="10" max="480" class="mt-1 w-full rounded-xl border border-slate-200 bg-transparent px-3 py-2 dark:border-slate-700" /></label><label class="text-xs font-medium">Kolom soal<select v-model.number="layoutUjian.kolom" class="mt-1 w-full rounded-xl border border-slate-200 bg-transparent px-3 py-2 dark:border-slate-700"><option :value="1">Satu kolom</option><option :value="2">Dua kolom</option></select></label><label class="text-xs font-medium">Orientasi<select v-model="layoutUjian.orientasi" class="mt-1 w-full rounded-xl border border-slate-200 bg-transparent px-3 py-2 dark:border-slate-700"><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select></label><label class="text-xs font-medium">Ukuran teks<select v-model.number="layoutUjian.fontSize" class="mt-1 w-full rounded-xl border border-slate-200 bg-transparent px-3 py-2 dark:border-slate-700"><option :value="10">Kecil</option><option :value="11">Normal</option><option :value="12">Besar</option></select></label><label class="text-xs font-medium">Jarak soal<select v-model="layoutUjian.spacing" class="mt-1 w-full rounded-xl border border-slate-200 bg-transparent px-3 py-2 dark:border-slate-700"><option value="rapat">Rapat</option><option value="normal">Normal</option><option value="lega">Lega</option></select></label><label class="text-xs font-medium">Garis jawaban esai<input v-model.number="layoutUjian.essayLines" type="number" min="2" max="12" class="mt-1 w-full rounded-xl border border-slate-200 bg-transparent px-3 py-2 dark:border-slate-700" /></label><label class="text-xs font-medium">Footer<input v-model="layoutUjian.footer" class="mt-1 w-full rounded-xl border border-slate-200 bg-transparent px-3 py-2 dark:border-slate-700" placeholder="Selamat mengerjakan" /></label></div>
+        <div class="mt-3 grid gap-3 sm:grid-cols-2"><label class="text-xs font-medium">Petunjuk pilihan ganda<textarea v-model="layoutUjian.instruksiPG" rows="2" class="mt-1 w-full rounded-xl border border-slate-200 bg-transparent px-3 py-2 dark:border-slate-700" /></label><label class="text-xs font-medium">Petunjuk esai<textarea v-model="layoutUjian.instruksiEssay" rows="2" class="mt-1 w-full rounded-xl border border-slate-200 bg-transparent px-3 py-2 dark:border-slate-700" /></label></div>
+      </section>
+
+      <section v-if="pemeriksaan.length" class="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/20"><h2 class="flex items-center gap-2 text-sm font-bold text-amber-800 dark:text-amber-300"><AppIcon name="alert" class="h-4 w-4" /> Pemeriksaan sebelum cetak</h2><ul class="mt-2 space-y-1 text-xs text-amber-700 dark:text-amber-300"><li v-for="item in pemeriksaan" :key="item">• {{ item }}</li></ul></section>
+
       <!-- Panel Kontrol Pengaturan Jumlah Soal -->
       <div
         class="bg-white dark:bg-slate-800 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm"
@@ -387,6 +395,8 @@ const jenjang = computed(() => String(route.query.jenjang || "SD"));
 const schoolName = computed(() => String(route.query.sekolah || "Sekolah Saya"));
 const { db } = useFirebase();
 const { user } = useAuth();
+const { success, error, warning } = useToast();
+const { catatAktivitas } = useAuditLog();
 
 const activeTab = ref("pg");
 const mapelAjar = ref([]);
@@ -407,8 +417,14 @@ const riwayatUjian = ref([]);
 const modeSimulasi = ref(false);
 const savingKop = ref(false);
 const uploadingLogo = ref("");
+const templateUjian = ref([]);
+const templateTerpilih = ref("");
+const draftStatus = ref("Tersimpan");
+const layoutUjian = ref({ tanggal: "", durasi: 90, kolom: 2, orientasi: "portrait", fontSize: 11, spacing: "normal", essayLines: 4, footer: "Selamat mengerjakan", instruksiPG: "Berilah tanda silang (X) pada huruf a, b, c, atau d di depan jawaban yang paling benar!", instruksiEssay: "Jawablah pertanyaan-pertanyaan di bawah ini dengan singkat dan tepat!" });
 
 const kopDocId = computed(() => `${user.value?.uid || "guru"}_${assignmentId.value}`.replace(/[^a-zA-Z0-9_-]/g, "_"));
+const draftDocId = computed(() => `${kopDocId.value}_${kelasId}_${String(selectedMapel.value || "mapel").replace(/[^a-zA-Z0-9_-]/g, "_")}`);
+let draftTimer;
 
 const loadPengaturan = async () => {
   if (!user.value) return;
@@ -458,6 +474,34 @@ const infoUjian = ref({
   logoKiriUrl: "",
   logoKananUrl: "",
 });
+
+const soalTerpilih = computed(() => [...listSoalPG.value.filter(s => terpilihPG.value.includes(s.id)), ...listSoalEssay.value.filter(s => terpilihEssay.value.includes(s.id))]);
+const pemeriksaan = computed(() => {
+  const hasil = [];
+  if (!soalTerpilih.value.length) hasil.push("Belum ada soal yang dipilih.");
+  const pgTidakLengkap = soalTerpilih.value.filter(s => s.tipe !== "essay" && (!s.opsi?.a || !s.opsi?.b || !s.kunciJawaban));
+  if (pgTidakLengkap.length) hasil.push(`${pgTidakLengkap.length} soal pilihan ganda belum memiliki opsi atau kunci yang lengkap.`);
+  const teks = new Map(); let duplikat = 0;
+  soalTerpilih.value.forEach(s => { const key = String(s.pertanyaan || "").trim().toLowerCase(); if (teks.has(key)) duplikat++; else teks.set(key, true); });
+  if (duplikat) hasil.push(`${duplikat} soal terdeteksi duplikat dalam paket.`);
+  if (!infoUjian.value.namaSekolah.trim()) hasil.push("Nama sekolah belum diisi.");
+  if (!infoUjian.value.namaUjian.trim()) hasil.push("Nama ujian belum diisi.");
+  return hasil;
+});
+
+const loadTemplate = async () => {
+  if (!user.value) return;
+  const snap = await getDocs(query(collection(db, "templateUjian"), where("userId", "==", user.value.uid)));
+  templateUjian.value = snap.docs.map(item => ({ id: item.id, ...item.data() })).filter(item => item.assignmentId === assignmentId.value);
+};
+const simpanTemplate = async () => {
+  const nama = prompt("Nama template ujian:", `${infoUjian.value.namaUjian} ${infoUjian.value.semester}`);
+  if (!nama?.trim()) return;
+  await addDoc(collection(db, "templateUjian"), { userId: user.value.uid, assignmentId: assignmentId.value, nama: nama.trim(), infoUjian: { ...infoUjian.value }, layoutUjian: { ...layoutUjian.value }, komposisi: { ...komposisi }, watermark: watermark.value, createdAt: new Date(), updatedAt: new Date() });
+  await catatAktivitas("template_ujian_dibuat", { nama: nama.trim() });
+  await loadTemplate(); success("Template ujian berhasil disimpan.");
+};
+const pakaiTemplate = () => { const item = templateUjian.value.find(template => template.id === templateTerpilih.value); if (!item) return; infoUjian.value = { ...infoUjian.value, ...item.infoUjian }; layoutUjian.value = { ...layoutUjian.value, ...item.layoutUjian }; Object.assign(komposisi, item.komposisi || {}); watermark.value = item.watermark || ""; success(`Template ${item.nama} diterapkan.`); };
 
 const simpanKop = async () => {
   if (!user.value) return;
@@ -530,9 +574,9 @@ const loadSoal = async () => {
     );
     const snap = await getDocs(q);
     const fetched = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-    const all = assignmentId.value === "legacy"
+    const all = (assignmentId.value === "legacy"
       ? fetched.filter((soal) => !soal.assignmentId || soal.assignmentId === "legacy")
-      : fetched.filter((soal) => soal.assignmentId === assignmentId.value);
+      : fetched.filter((soal) => soal.assignmentId === assignmentId.value)).filter(soal => (soal.status || "aktif") === "aktif");
     listSoalPG.value = all.filter((s) => s.tipe !== "essay");
     listSoalEssay.value = all.filter((s) => s.tipe === "essay");
   } catch (e) {
@@ -658,6 +702,7 @@ const resetPilihan = () => {
 };
 
 const bukaKertasCetak = async (mode = "A") => {
+  if (pemeriksaan.value.some(item => item.includes("belum memiliki") || item.includes("Nama sekolah") || item.includes("Nama ujian") || item.includes("Belum ada"))) { warning("Perbaiki hasil pemeriksaan sebelum mencetak."); return; }
   const printWindow = window.open("", "_blank");
 
   // Memastikan seluruh objek data soal (termasuk imageUrl) terkirim ke halaman print
@@ -675,6 +720,7 @@ const bukaKertasCetak = async (mode = "A") => {
     essay: paketA.essay,
     pakets: mode === "AB" ? [paketA, paketB] : [paketA],
     watermark: watermark.value,
+    layoutUjian: { ...layoutUjian.value },
     dibuatPada: new Date().toISOString(),
   };
   localStorage.setItem("teachbank_print_payload", JSON.stringify(printData));
@@ -700,6 +746,7 @@ const bukaKertasCetak = async (mode = "A") => {
       namaUjian: infoUjian.value.namaUjian, jumlahSoal: ids.length, modePaket: mode, simulasi: modeSimulasi.value,
       payload: printData, createdAt: new Date(),
     });
+    await catatAktivitas("ujian_dicetak", { mapel: selectedMapel.value, kelas: kelasId, jumlahSoal: ids.length, modePaket: mode });
   } catch (e) {
     console.error("Gagal memperbarui status soal di Firestore:", e);
   }
@@ -719,5 +766,18 @@ onMounted(async () => {
   await loadPengaturan();
   await loadSoal();
   await loadRiwayat();
+  await loadTemplate();
+  const draft = await getDoc(doc(db, "draftGuru", draftDocId.value));
+  if (draft.exists()) { layoutUjian.value = { ...layoutUjian.value, ...draft.data().layoutUjian }; infoUjian.value = { ...infoUjian.value, ...draft.data().infoUjian }; }
 });
+watch([infoUjian, layoutUjian, watermark], () => {
+  if (!user.value) return;
+  draftStatus.value = "Belum tersimpan";
+  clearTimeout(draftTimer);
+  draftTimer = setTimeout(async () => {
+    draftStatus.value = "Menyimpan…";
+    try { await setDoc(doc(db, "draftGuru", draftDocId.value), { userId: user.value.uid, assignmentId: assignmentId.value, kelas: kelasId, mapel: selectedMapel.value, infoUjian: { ...infoUjian.value }, layoutUjian: { ...layoutUjian.value }, watermark: watermark.value, updatedAt: new Date() }, { merge: true }); draftStatus.value = "Tersimpan"; }
+    catch { draftStatus.value = "Gagal menyimpan"; }
+  }, 1200);
+}, { deep: true });
 </script>

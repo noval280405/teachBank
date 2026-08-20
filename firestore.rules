@@ -1,0 +1,27 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function ownsExisting() { return signedIn() && resource.data.userId == request.auth.uid; }
+    function ownsIncoming() { return signedIn() && request.resource.data.userId == request.auth.uid; }
+    function ownershipUnchanged() { return request.resource.data.userId == resource.data.userId; }
+
+    match /pengaturanGuru/{uid} {
+      allow read, create, update, delete: if signedIn() && request.auth.uid == uid;
+    }
+
+    match /soal/{id} {
+      allow create: if ownsIncoming();
+      allow read, delete: if ownsExisting();
+      allow update: if ownsExisting() && ownsIncoming() && ownershipUnchanged();
+    }
+
+    match /{collectionName}/{id} {
+      allow create: if collectionName in ['riwayatUjian', 'kopUjian', 'templateUjian', 'auditAktivitas', 'draftGuru'] && ownsIncoming();
+      allow read, delete: if collectionName in ['riwayatUjian', 'kopUjian', 'templateUjian', 'auditAktivitas', 'draftGuru'] && ownsExisting();
+      allow update: if collectionName in ['riwayatUjian', 'kopUjian', 'templateUjian', 'auditAktivitas', 'draftGuru'] && ownsExisting() && ownsIncoming() && ownershipUnchanged();
+    }
+
+    match /{document=**} { allow read, write: if false; }
+  }
+}

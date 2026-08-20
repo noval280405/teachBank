@@ -6,6 +6,7 @@
     <div v-else-if="!kartuKelas.length" class="rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center dark:border-slate-700 dark:bg-slate-800"><span class="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-brand-50 text-brand-600"><AppIcon name="school" class="h-6 w-6" /></span><h2 class="font-bold">Penugasan belum diatur</h2><p class="mb-5 mt-1 text-sm text-slate-500">Tambahkan sekolah, jenjang, kelas, dan mata pelajaran Anda.</p><NuxtLink to="/pengaturan" class="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white"><AppIcon name="plus" class="h-4 w-4" />Tambah Penugasan</NuxtLink></div>
 
     <template v-else>
+      <section v-if="pekerjaanTerakhir.length" class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800"><div class="mb-3"><h2 class="font-bold">Lanjutkan pekerjaan</h2><p class="text-xs text-slate-500">Draft dan ujian terakhir Anda.</p></div><div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3"><NuxtLink v-for="item in pekerjaanTerakhir" :key="item.id" :to="pekerjaanUrl(item)" class="rounded-xl border border-slate-200 p-3 transition hover:border-brand-300 hover:bg-brand-50 dark:border-slate-700 dark:hover:bg-brand-950/20"><p class="text-[10px] font-bold uppercase text-brand-600">{{ item.jenis }}</p><p class="mt-1 truncate text-sm font-semibold">{{ item.mapel || item.namaUjian || 'Ujian' }}</p><p class="mt-1 text-[11px] text-slate-500">Kelas {{ item.kelas }} · {{ formatTanggal(item.updatedAt || item.createdAt) }}</p></NuxtLink></div></section>
       <section class="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800"><div class="grid gap-2 md:grid-cols-[1fr_150px_200px]">
         <div class="relative"><AppIcon name="search" class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" /><input v-model="searchQuery" type="search" placeholder="Cari kelas, mapel, atau nama sekolah..." class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900/40" /></div>
         <select v-model="filterJenjang" class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none dark:border-slate-700 dark:bg-slate-900/40"><option value="semua">Semua jenjang</option><option v-for="jenjang in ['SD','SMP','SMA/SMK']" :key="jenjang" :value="jenjang">{{ jenjang }}</option></select>
@@ -21,7 +22,7 @@
 </template>
 
 <script setup>
-import { doc, getDoc } from 'firebase/firestore'
+import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore'
 definePageMeta({ middleware: 'auth' })
 const { db } = useFirebase()
 const { user } = useAuth()
@@ -30,6 +31,7 @@ const penugasan = ref([])
 const searchQuery = ref('')
 const filterJenjang = ref('semua')
 const filterMapel = ref('semua')
+const pekerjaanTerakhir = ref([])
 const urutanJenjang = ['SD', 'SMP', 'SMA/SMK']
 const kartuKelas = computed(() => penugasan.value
   .flatMap(tugas => tugas.kelasAjar.map(kelas => ({ assignmentId: tugas.id, jenjang: tugas.jenjang === 'SMK' || tugas.jenjang === 'SMA' ? 'SMA/SMK' : tugas.jenjang, namaSekolah: tugas.namaSekolah, kelas, mapelAjar: tugas.mapelPerKelas?.[kelas] || tugas.mapelAjar || [] })))
@@ -39,10 +41,12 @@ const filteredKartu = computed(() => { const q = searchQuery.value.trim().toLowe
 const adaFilter = computed(() => searchQuery.value || filterJenjang.value !== 'semua' || filterMapel.value !== 'semua')
 const resetFilter = () => { searchQuery.value = ''; filterJenjang.value = 'semua'; filterMapel.value = 'semua' }
 const kelasUrl = item => ({ path: `/dashboard/kelas/${item.kelas}`, query: { assignment: item.assignmentId, jenjang: item.jenjang, sekolah: item.namaSekolah, mapel: item.mapelAjar[0] || '' } })
+const pekerjaanUrl = item => ({ path: `/dashboard/kelas/${item.kelas}/${item.jenis === 'Riwayat ujian' ? 'cetak' : item.formSoal ? '' : 'cetak'}`, query: { assignment: item.assignmentId, mapel: item.mapel || '' } })
+const formatTanggal = value => { const date = value?.toDate ? value.toDate() : new Date(value); return Number.isNaN(date.getTime()) ? '-' : new Intl.DateTimeFormat('id-ID', { dateStyle: 'medium' }).format(date) }
 const warnaJenjang = (jenjang) => {
   if (jenjang === 'SMP') return { card: 'border-purple-200 hover:border-purple-400 dark:border-purple-900/70', decoration: 'bg-purple-50 dark:bg-purple-900/20', number: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300', badge: 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300', arrow: 'border-purple-200 text-purple-500 dark:border-purple-900', divider: 'border-purple-100 dark:border-purple-900/50', text: 'text-purple-500' }
   if (jenjang === 'SMA/SMK') return { card: 'border-amber-200 hover:border-amber-400 dark:border-amber-900/70', decoration: 'bg-amber-50 dark:bg-amber-900/20', number: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300', badge: 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300', arrow: 'border-amber-200 text-amber-600 dark:border-amber-900', divider: 'border-amber-100 dark:border-amber-900/50', text: 'text-amber-500' }
   return { card: 'border-sky-200 hover:border-sky-400 dark:border-sky-900/70', decoration: 'bg-sky-50 dark:bg-sky-900/20', number: 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300', badge: 'bg-sky-100 text-sky-700 dark:bg-sky-900/50 dark:text-sky-300', arrow: 'border-sky-200 text-sky-600 dark:border-sky-900', divider: 'border-sky-100 dark:border-sky-900/50', text: 'text-sky-500' }
 }
-onMounted(async () => { try { if (user.value) { const snap = await getDoc(doc(db, 'pengaturanGuru', user.value.uid)); if (snap.exists()) { const data = snap.data(); penugasan.value = data.penugasan?.length ? data.penugasan : (data.kelasAjar?.length ? [{ id: 'legacy', jenjang: 'SD', namaSekolah: 'Sekolah Saya', kelasAjar: data.kelasAjar, mapelAjar: data.mapelAjar || [] }] : []) } } } finally { loading.value = false } })
+onMounted(async () => { try { if (user.value) { const snap = await getDoc(doc(db, 'pengaturanGuru', user.value.uid)); if (snap.exists()) { const data = snap.data(); penugasan.value = data.penugasan?.length ? data.penugasan : (data.kelasAjar?.length ? [{ id: 'legacy', jenjang: 'SD', namaSekolah: 'Sekolah Saya', kelasAjar: data.kelasAjar, mapelAjar: data.mapelAjar || [] }] : []) } const [drafts, histories] = await Promise.all([getDocs(query(collection(db, 'draftGuru'), where('userId', '==', user.value.uid))), getDocs(query(collection(db, 'riwayatUjian'), where('userId', '==', user.value.uid)))]); pekerjaanTerakhir.value = [...drafts.docs.map(d => ({ id: d.id, jenis: 'Draft', ...d.data() })), ...histories.docs.map(d => ({ id: d.id, jenis: 'Riwayat ujian', ...d.data() }))].sort((a,b) => ((b.updatedAt || b.createdAt)?.seconds || 0) - ((a.updatedAt || a.createdAt)?.seconds || 0)).slice(0, 6) } } finally { loading.value = false } })
 </script>
