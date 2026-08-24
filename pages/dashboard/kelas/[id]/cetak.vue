@@ -2,6 +2,11 @@
 <template>
   <ClientOnly>
     <div class="max-w-6xl mx-auto space-y-6 pb-16 text-slate-800 dark:text-slate-100">
+      <AppLoadingOverlay
+        :show="overlayLoading.show"
+        :title="overlayLoading.title"
+        :description="overlayLoading.description"
+      />
       <!-- Header -->
       <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-600 via-brand-600 to-indigo-700 p-6 sm:p-8 text-white shadow-xl shadow-brand-900/10">
         <div class="absolute -right-16 -top-20 h-64 w-64 rounded-full bg-white/10"></div>
@@ -40,7 +45,7 @@
 
       <div class="grid gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800 md:grid-cols-[1fr_220px]">
         <div><div class="mb-3 flex items-center gap-3"><span class="grid h-9 w-9 place-items-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-900/30"><AppIcon name="pie" class="h-4 w-4" /></span><div><h2 class="text-sm font-bold">Komposisi tingkat kesulitan</h2><p class="text-xs text-slate-500">Digunakan saat memilih soal otomatis.</p></div></div><div class="grid grid-cols-3 gap-2"><label v-for="level in ['mudah','sedang','sulit']" :key="level" class="rounded-xl border border-slate-200 p-2 dark:border-slate-700"><span class="text-[10px] font-bold capitalize text-slate-500">{{ level }}</span><div class="mt-1 flex items-center"><input v-model.number="komposisi[level]" type="number" min="0" max="100" class="w-full bg-transparent text-lg font-bold outline-none" /><span class="text-xs text-slate-400">%</span></div></label></div></div>
-        <div class="flex flex-col justify-end gap-2"><button @click="muatContohSimulasi" class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-xs font-semibold text-white hover:bg-brand-700"><AppIcon name="sparkle" class="h-4 w-4" />Muat contoh simulasi</button><button @click="pilihBerdasarkanKomposisi" class="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-semibold text-white dark:bg-slate-700"><AppIcon name="pie" class="h-4 w-4" />Pilih sesuai komposisi</button><label class="flex items-center gap-2 text-xs font-medium text-slate-500"><input v-model="acakOpsiPaketB" type="checkbox" class="rounded text-brand-600" />Acak opsi jawaban Paket B</label><select v-model="watermark" class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold dark:border-slate-700 dark:bg-slate-900/40"><option value="">Tanpa watermark</option><option value="DRAFT">DRAFT</option><option value="RAHASIA">RAHASIA</option><option value="DOKUMEN NEGERI">DOKUMEN NEGERI</option></select></div>
+        <div class="flex flex-col justify-end gap-2"><button @click="pilihBerdasarkanKomposisi" class="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-semibold text-white dark:bg-slate-700"><AppIcon name="pie" class="h-4 w-4" />Pilih sesuai komposisi</button><label class="flex items-center gap-2 text-xs font-medium text-slate-500"><input v-model="acakOpsiPaketB" type="checkbox" class="rounded text-brand-600" />Acak opsi jawaban Paket B</label><select v-model="watermark" class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold dark:border-slate-700 dark:bg-slate-900/40"><option value="">Tanpa watermark</option><option value="DRAFT">DRAFT</option><option value="RAHASIA">RAHASIA</option><option value="DOKUMEN NEGERI">DOKUMEN NEGERI</option></select></div>
       </div>
 
       <!-- Pengaturan Identitas Ujian (KOP Surat) -->
@@ -365,7 +370,7 @@
         </div>
       </div>
 
-      <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800"><div class="mb-4 flex items-center gap-3"><span class="grid h-9 w-9 place-items-center rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300"><AppIcon name="printer" class="h-4 w-4" /></span><div><h2 class="text-sm font-bold">Riwayat ujian</h2><p class="text-xs text-slate-500">Cetak ulang paket yang sama persis.</p></div></div><div v-if="riwayatUjian.length" class="space-y-2"><div v-for="item in riwayatUjian" :key="item.id" class="flex flex-col justify-between gap-3 rounded-xl border border-slate-200 p-3 dark:border-slate-700 sm:flex-row sm:items-center"><div><p class="text-sm font-bold">{{ item.namaUjian }} · {{ item.mapel }}</p><p class="text-[11px] text-slate-500">{{ formatTanggal(item.createdAt) }} · {{ item.jumlahSoal }} soal · Paket {{ item.modePaket }}</p></div><button @click="cetakUlang(item)" class="inline-flex items-center justify-center gap-1.5 rounded-lg bg-brand-50 px-3 py-2 text-xs font-semibold text-brand-700 dark:bg-brand-900/30 dark:text-brand-300"><AppIcon name="printer" class="h-3.5 w-3.5" />Cetak ulang</button></div></div><p v-else class="rounded-xl border border-dashed border-slate-200 py-6 text-center text-xs text-slate-400 dark:border-slate-700">Belum ada riwayat cetak untuk kelas ini.</p></section>
+      <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800"><div class="mb-4 flex items-center gap-3"><span class="grid h-9 w-9 place-items-center rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300"><AppIcon name="printer" class="h-4 w-4" /></span><div><h2 class="text-sm font-bold">Riwayat ujian</h2><p class="text-xs text-slate-500">Cetak ulang atau hapus riwayat ujian.</p></div></div><div v-if="riwayatUjian.length" class="space-y-2"><div v-for="item in riwayatUjian" :key="item.id" class="flex flex-col justify-between gap-3 rounded-xl border border-slate-200 p-3 dark:border-slate-700 sm:flex-row sm:items-center"><div><p class="text-sm font-bold">{{ item.namaUjian }} · {{ item.mapel }}</p><p class="text-[11px] text-slate-500">{{ formatTanggal(item.createdAt) }} · {{ item.jumlahSoal }} soal · Paket {{ item.modePaket }}</p></div><div class="flex gap-2"><button @click="cetakUlang(item)" class="inline-flex items-center justify-center gap-1.5 rounded-lg bg-brand-50 px-3 py-2 text-xs font-semibold text-brand-700 dark:bg-brand-900/30 dark:text-brand-300"><AppIcon name="printer" class="h-3.5 w-3.5" />Cetak ulang</button><button @click="hapusRiwayat(item)" class="inline-flex items-center justify-center gap-1.5 rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-600 dark:bg-red-900/20 dark:text-red-300"><AppIcon name="trash" class="h-3.5 w-3.5" />Hapus</button></div></div></div><p v-else class="rounded-xl border border-dashed border-slate-200 py-6 text-center text-xs text-slate-400 dark:border-slate-700">Belum ada riwayat cetak untuk kelas ini.</p></section>
     </div>
   </ClientOnly>
 </template>
@@ -381,6 +386,7 @@ import {
   setDoc,
   updateDoc,
   addDoc,
+  deleteDoc,
   increment,
   arrayUnion,
 } from "firebase/firestore";
@@ -414,16 +420,24 @@ const komposisi = reactive({ mudah: 20, sedang: 60, sulit: 20 });
 const acakOpsiPaketB = ref(true);
 const watermark = ref("");
 const riwayatUjian = ref([]);
-const modeSimulasi = ref(false);
+const deletingHistoryId = ref("");
 const savingKop = ref(false);
 const uploadingLogo = ref("");
 const templateUjian = ref([]);
 const templateTerpilih = ref("");
 const draftStatus = ref("Tersimpan");
+const loadingPage = ref(true);
 const layoutUjian = ref({ tanggal: "", durasi: 90, kolom: 2, orientasi: "portrait", fontSize: 11, spacing: "normal", essayLines: 4, footer: "Selamat mengerjakan", instruksiPG: "Berilah tanda silang (X) pada huruf a, b, c, atau d di depan jawaban yang paling benar!", instruksiEssay: "Jawablah pertanyaan-pertanyaan di bawah ini dengan singkat dan tepat!" });
 
 const kopDocId = computed(() => `${user.value?.uid || "guru"}_${assignmentId.value}`.replace(/[^a-zA-Z0-9_-]/g, "_"));
 const draftDocId = computed(() => `${kopDocId.value}_${kelasId}_${String(selectedMapel.value || "mapel").replace(/[^a-zA-Z0-9_-]/g, "_")}`);
+const overlayLoading = computed(() => {
+  if (uploadingLogo.value) return { show: true, title: "Menyiapkan logo sekolah", description: "Logo sedang dioptimalkan dan disimpan ke kop ujian." };
+  if (savingKop.value) return { show: true, title: "Menyimpan identitas ujian", description: "Kop ujian akan siap digunakan untuk cetakan berikutnya." };
+  if (deletingHistoryId.value) return { show: true, title: "Menghapus riwayat", description: "Riwayat ujian sedang diperbarui dengan aman." };
+  if (loadingPage.value) return { show: true, title: "Menyiapkan ruang cetak", description: "Memuat soal, template, dan identitas ujian Anda." };
+  return { show: false, title: "", description: "" };
+});
 let draftTimer;
 
 const loadPengaturan = async () => {
@@ -456,8 +470,6 @@ watch(selectedMapel, (newMapel) => {
       query: { ...route.query, mapel: newMapel },
     });
 
-    if (modeSimulasi.value && newMapel === "Simulasi Campuran") return;
-    modeSimulasi.value = false;
     resetPilihan();
     searchQuery.value = "";
     loadSoal();
@@ -508,10 +520,10 @@ const simpanKop = async () => {
   savingKop.value = true;
   try {
     await setDoc(doc(db, "kopUjian", kopDocId.value), { ...infoUjian.value, userId: user.value.uid, assignmentId: assignmentId.value, updatedAt: new Date() }, { merge: true });
-    alert("Pengaturan kop berhasil disimpan.");
-  } catch (error) {
-    console.error("Gagal menyimpan kop:", error);
-    alert("Pengaturan kop belum berhasil disimpan.");
+    success("Pengaturan kop berhasil disimpan.");
+  } catch (err) {
+    console.error("Gagal menyimpan kop:", err);
+    error("Pengaturan kop belum berhasil disimpan.");
   } finally { savingKop.value = false; }
 };
 
@@ -538,13 +550,13 @@ const kompresLogo = file => new Promise((resolve, reject) => {
 const unggahLogo = async (event, posisi) => {
   const file = event.target.files?.[0];
   if (!file || !user.value) return;
-  if (!file.type.startsWith("image/")) { alert("Pilih file gambar PNG, JPG, atau WEBP."); event.target.value = ""; return; }
-  if (file.size > 5 * 1024 * 1024) { alert("Ukuran logo maksimal 5 MB."); event.target.value = ""; return; }
+  if (!file.type.startsWith("image/")) { warning("Pilih file gambar PNG, JPG, atau WEBP."); event.target.value = ""; return; }
+  if (file.size > 5 * 1024 * 1024) { warning("Ukuran logo maksimal 5 MB."); event.target.value = ""; return; }
   uploadingLogo.value = posisi;
   try {
     infoUjian.value[logoKey(posisi)] = await kompresLogo(file);
     await setDoc(doc(db, "kopUjian", kopDocId.value), { ...infoUjian.value, userId: user.value.uid, assignmentId: assignmentId.value, updatedAt: new Date() }, { merge: true });
-  } catch (error) { console.error("Gagal memproses logo:", error); alert(`Logo gagal diproses: ${error?.message || "format file tidak didukung"}.`); }
+  } catch (err) { console.error("Gagal memproses logo:", err); error(`Logo gagal diproses: ${err?.message || "format file tidak didukung"}.`); }
   finally { uploadingLogo.value = ""; event.target.value = ""; }
 };
 const hapusLogo = posisi => { infoUjian.value[logoKey(posisi)] = ""; };
@@ -592,7 +604,7 @@ const togglePilih = (id, tipe) => {
     target.value = target.value.filter((item) => item !== id);
   } else {
     if (target.value.length >= limit) {
-      alert(
+      warning(
         `Batas maksimum pemilihan untuk tipe ini adalah ${limit} soal. Silakan naikkan input target jika ingin memilih lebih banyak.`,
       );
       return;
@@ -650,39 +662,9 @@ const ambilSesuaiKomposisi = (list, total) => {
 
 const pilihBerdasarkanKomposisi = () => {
   const totalPersen = komposisi.mudah + komposisi.sedang + komposisi.sulit;
-  if (totalPersen !== 100) { alert("Total komposisi tingkat kesulitan harus 100%."); return; }
+  if (totalPersen !== 100) { warning("Total komposisi tingkat kesulitan harus 100%."); return; }
   terpilihPG.value = ambilSesuaiKomposisi(listSoalPG.value, Math.min(targetJumlahPG.value, listSoalPG.value.length));
   terpilihEssay.value = ambilSesuaiKomposisi(listSoalEssay.value, Math.min(targetJumlahEssay.value, listSoalEssay.value.length));
-};
-
-const muatContohSimulasi = () => {
-  modeSimulasi.value = true;
-  if (!mapelAjar.value.includes("Simulasi Campuran")) mapelAjar.value.push("Simulasi Campuran");
-  selectedMapel.value = "Simulasi Campuran";
-  infoUjian.value.namaUjian = "Simulasi Ujian Campuran";
-  const pg = [
-    { id: "demo-pg-1", mapel: "Matematika", tipe: "pg", tingkatKesulitan: "mudah", pertanyaan: "Hasil dari $\\frac{3}{4} + \\frac{1}{4}$ adalah ...", opsi: { a: "$\\frac{1}{2}$", b: "$1$", c: "$\\frac{3}{8}$", d: "$2$" }, kunciJawaban: "b" },
-    { id: "demo-pg-2", mapel: "Matematika", tipe: "pg", tingkatKesulitan: "sedang", pertanyaan: "Perhatikan gambar. Berapakah luas bangun tersebut?", imageUrl: "/images/simulasi-bangun-datar.svg", opsi: { a: "$20\\,cm^2$", b: "$40\\,cm^2$", c: "$96\\,cm^2$", d: "$120\\,cm^2$" }, kunciJawaban: "c" },
-    { id: "demo-pg-3", mapel: "IPAS", tipe: "pg", tingkatKesulitan: "mudah", pertanyaan: "Perubahan air menjadi uap pada gambar siklus air disebut ...", imageUrl: "/images/simulasi-siklus-air.svg", opsi: { a: "kondensasi", b: "presipitasi", c: "evaporasi", d: "infiltrasi" }, kunciJawaban: "c" },
-    { id: "demo-pg-4", mapel: "Bahasa Indonesia", tipe: "pg", tingkatKesulitan: "sedang", pertanyaan: "Kalimat yang menggunakan kata baku adalah ...", opsi: { a: "Adik membeli obat di apotik.", b: "Ibu memberi nasihat kepada Rani.", c: "Ayah sedang menganalisa data.", d: "Kakak memiliki ijin sekolah." }, kunciJawaban: "b" },
-    { id: "demo-pg-5", mapel: "PJOK", tipe: "pg", tingkatKesulitan: "mudah", pertanyaan: "Gerakan memantulkan bola ke lantai dalam permainan bola basket disebut ...", opsi: { a: "passing", b: "servis", c: "dribbling", d: "smash" }, kunciJawaban: "c" },
-    { id: "demo-pg-6", mapel: "PPKn", tipe: "pg", tingkatKesulitan: "sedang", pertanyaan: "Contoh penerapan sila ketiga Pancasila di sekolah adalah ...", opsi: { a: "memilih teman berdasarkan suku", b: "menjaga persatuan antarteman", c: "memaksakan pendapat", d: "tidak mengikuti upacara" }, kunciJawaban: "b" },
-    { id: "demo-pg-7", mapel: "Matematika", tipe: "pg", tingkatKesulitan: "sulit", pertanyaan: "Jika $2x + 5 = 17$, nilai $x$ adalah ...", opsi: { a: "$5$", b: "$6$", c: "$7$", d: "$11$" }, kunciJawaban: "b" },
-    { id: "demo-pg-8", mapel: "IPAS", tipe: "pg", tingkatKesulitan: "sulit", pertanyaan: "Energi kinetik dirumuskan $E_k = \\frac{1}{2}mv^2$. Jika $m=2$ kg dan $v=3$ m/s, nilai $E_k$ adalah ...", opsi: { a: "$3$ J", b: "$6$ J", c: "$9$ J", d: "$18$ J" }, kunciJawaban: "c" },
-  ];
-  const essay = [
-    { id: "demo-es-1", mapel: "Matematika", tipe: "essay", tingkatKesulitan: "sedang", pertanyaan: "Hitung nilai $\\sqrt{144} + 3^2$ dan tuliskan langkah pengerjaannya.", kunciJawaban: "$12 + 9 = 21$" },
-    { id: "demo-es-2", mapel: "IPAS", tipe: "essay", tingkatKesulitan: "sedang", pertanyaan: "Jelaskan tiga tahapan utama siklus air berdasarkan gambar.", imageUrl: "/images/simulasi-siklus-air.svg", kunciJawaban: "Penguapan, kondensasi, dan presipitasi." },
-    { id: "demo-es-3", mapel: "Bahasa Indonesia", tipe: "essay", tingkatKesulitan: "mudah", pertanyaan: "Buatlah satu paragraf pendek bertema menjaga kebersihan sekolah.", kunciJawaban: "Jawaban dinilai berdasarkan kesesuaian tema, struktur, dan penggunaan bahasa." },
-    { id: "demo-es-4", mapel: "PPKn", tipe: "essay", tingkatKesulitan: "sulit", pertanyaan: "Jelaskan hubungan antara hak, kewajiban, dan tanggung jawab seorang siswa.", kunciJawaban: "Hak diterima setelah kewajiban dilaksanakan dengan penuh tanggung jawab." },
-  ];
-  listSoalPG.value = pg;
-  listSoalEssay.value = essay;
-  targetJumlahPG.value = pg.length;
-  targetJumlahEssay.value = essay.length;
-  terpilihPG.value = pg.map(s => s.id);
-  terpilihEssay.value = essay.map(s => s.id);
-  activeTab.value = "pg";
 };
 
 const acakArray = (items) => [...items].sort(() => Math.random() - 0.5);
@@ -704,6 +686,10 @@ const resetPilihan = () => {
 const bukaKertasCetak = async (mode = "A") => {
   if (pemeriksaan.value.some(item => item.includes("belum memiliki") || item.includes("Nama sekolah") || item.includes("Nama ujian") || item.includes("Belum ada"))) { warning("Perbaiki hasil pemeriksaan sebelum mencetak."); return; }
   const printWindow = window.open("", "_blank");
+  if (!printWindow) {
+    warning("Jendela cetak diblokir browser. Izinkan pop-up untuk TeachBank, lalu coba lagi.");
+    return;
+  }
 
   // Memastikan seluruh objek data soal (termasuk imageUrl) terkirim ke halaman print
   const pgA = listSoalPG.value.filter((s) => terpilihPG.value.includes(s.id));
@@ -725,13 +711,11 @@ const bukaKertasCetak = async (mode = "A") => {
   };
   localStorage.setItem("teachbank_print_payload", JSON.stringify(printData));
 
-  if (printWindow) {
-    printWindow.location.href = `/dashboard/kelas/${kelasId}/print`;
-  }
+  printWindow.location.href = `/dashboard/kelas/${kelasId}/print`;
 
   try {
     const ids = [...terpilihPG.value, ...terpilihEssay.value];
-    const updatePromises = modeSimulasi.value ? [] : ids.map((id) =>
+    const updatePromises = ids.map((id) =>
       updateDoc(doc(db, "soal", id), {
         dipakai: true,
         jumlahDicetak: increment(1),
@@ -743,7 +727,7 @@ const bukaKertasCetak = async (mode = "A") => {
     await addDoc(collection(db, "riwayatUjian"), {
       userId: user.value.uid, assignmentId: assignmentId.value, kelas: kelasId,
       jenjang: jenjang.value, namaSekolah: schoolName.value, mapel: selectedMapel.value,
-      namaUjian: infoUjian.value.namaUjian, jumlahSoal: ids.length, modePaket: mode, simulasi: modeSimulasi.value,
+      namaUjian: infoUjian.value.namaUjian, jumlahSoal: ids.length, modePaket: mode,
       payload: printData, createdAt: new Date(),
     });
     await catatAktivitas("ujian_dicetak", { mapel: selectedMapel.value, kelas: kelasId, jumlahSoal: ids.length, modePaket: mode });
@@ -761,14 +745,19 @@ const loadRiwayat = async () => {
 };
 const formatTanggal = value => { const date = value?.toDate ? value.toDate() : new Date(value); return Number.isNaN(date.getTime()) ? "-" : new Intl.DateTimeFormat("id-ID", { dateStyle: "medium" }).format(date); };
 const cetakUlang = (item) => { localStorage.setItem("teachbank_print_payload", JSON.stringify(item.payload)); window.open(`/dashboard/kelas/${kelasId}/print`, "_blank"); };
+const hapusRiwayat = async item => { if (!confirm(`Hapus riwayat "${item.namaUjian}"?`)) return; deletingHistoryId.value = item.id; try { await deleteDoc(doc(db, "riwayatUjian", item.id)); await catatAktivitas("riwayat_ujian_dihapus", { riwayatId: item.id, namaUjian: item.namaUjian }); riwayatUjian.value = riwayatUjian.value.filter(riwayat => riwayat.id !== item.id); success("Riwayat ujian berhasil dihapus."); } catch (err) { console.error("Gagal menghapus riwayat ujian:", err); error("Riwayat ujian gagal dihapus."); } finally { deletingHistoryId.value = ""; } };
 
 onMounted(async () => {
-  await loadPengaturan();
-  await loadSoal();
-  await loadRiwayat();
-  await loadTemplate();
-  const draft = await getDoc(doc(db, "draftGuru", draftDocId.value));
-  if (draft.exists()) { layoutUjian.value = { ...layoutUjian.value, ...draft.data().layoutUjian }; infoUjian.value = { ...infoUjian.value, ...draft.data().infoUjian }; }
+  try {
+    await loadPengaturan();
+    await loadSoal();
+    await loadRiwayat();
+    await loadTemplate();
+    const draft = await getDoc(doc(db, "draftGuru", draftDocId.value));
+    if (draft.exists()) { layoutUjian.value = { ...layoutUjian.value, ...draft.data().layoutUjian }; infoUjian.value = { ...infoUjian.value, ...draft.data().infoUjian }; }
+  } finally {
+    loadingPage.value = false;
+  }
 });
 watch([infoUjian, layoutUjian, watermark], () => {
   if (!user.value) return;

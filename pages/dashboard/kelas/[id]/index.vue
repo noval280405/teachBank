@@ -1,6 +1,11 @@
 <!-- pages/dashboard/kelas/[id]/index.vue -->
 <template>
   <div class="mx-auto max-w-6xl space-y-6 pb-16 text-slate-800 dark:text-slate-100">
+    <AppLoadingOverlay
+      :show="overlayLoading.show"
+      :title="overlayLoading.title"
+      :description="overlayLoading.description"
+    />
     <!-- Header Navigation -->
     <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-brand-800 to-brand-600 p-6 text-white shadow-xl shadow-brand-900/10 sm:p-8">
       <div class="absolute -right-16 -top-20 h-64 w-64 rounded-full bg-white/10"></div>
@@ -111,7 +116,7 @@
         </div>
         <select v-model="filterKesulitan" class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold outline-none dark:border-slate-700 dark:bg-slate-900/50"><option value="semua">Semua level</option><option value="mudah">Mudah</option><option value="sedang">Sedang</option><option value="sulit">Sulit</option></select>
         <select v-model="filterStatus" class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold outline-none dark:border-slate-700 dark:bg-slate-900/50"><option value="aktif">Soal aktif</option><option value="draft">Draft</option><option value="arsip">Arsip</option><option value="sampah">Sampah</option><option value="semua">Semua status</option></select>
-        <div class="flex gap-1"><button @click="downloadTemplateExcel" class="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-100" title="Unduh template Excel"><AppIcon name="file" class="h-3.5 w-3.5" />Template</button><button @click="$refs.csvInput.click()" class="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold text-brand-600 hover:bg-brand-50"><AppIcon name="plus" class="h-3.5 w-3.5" />Import</button><button @click="exportExcel" :disabled="!daftarSoal.length" class="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold text-emerald-600 hover:bg-emerald-50 disabled:opacity-40"><AppIcon name="save" class="h-3.5 w-3.5" />Export</button><input ref="csvInput" type="file" accept=".xlsx,.xls,.csv,text/csv" class="hidden" @change="importSpreadsheet" /></div>
+        <div class="flex flex-wrap gap-1"><button @click="downloadTemplateExcel" class="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-100" title="Unduh template Excel"><AppIcon name="file" class="h-3.5 w-3.5" />Template</button><button @click="$refs.csvInput.click()" :disabled="importingSpreadsheet" class="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold text-brand-600 hover:bg-brand-50 disabled:opacity-50"><AppIcon :name="importingSpreadsheet ? 'loader' : 'plus'" :class="['h-3.5 w-3.5', { 'animate-spin': importingSpreadsheet }]" />{{ importingSpreadsheet ? 'Mengimpor…' : 'Import' }}</button><button @click="exportExcel" :disabled="!daftarSoal.length" class="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold text-emerald-600 hover:bg-emerald-50 disabled:opacity-40"><AppIcon name="save" class="h-3.5 w-3.5" />Export</button><button @click="showModalHapusSemua = true" :disabled="!jumlahSoalBisaDihapus || deletingAll" class="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40" title="Pindahkan semua soal mapel ini ke sampah"><AppIcon :name="deletingAll ? 'loader' : 'trash'" :class="['h-3.5 w-3.5', { 'animate-spin': deletingAll }]" />Hapus Semua</button><input ref="csvInput" type="file" accept=".xlsx,.xls,.csv,text/csv" class="hidden" @change="importSpreadsheet" /></div>
       </div>
     </ClientOnly>
 
@@ -442,6 +447,23 @@
       </div>
       </Teleport>
     </ClientOnly>
+
+    <!-- Modal Konfirmasi Hapus Semua Soal -->
+    <ClientOnly>
+      <Teleport to="body">
+      <div v-if="showModalHapusSemua" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+        <div class="w-full max-w-sm space-y-4 rounded-2xl bg-white p-6 text-center shadow-xl dark:bg-slate-800">
+          <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-900/30"><AppIcon name="alert" class="h-6 w-6" /></div>
+          <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100">Hapus Semua Soal?</h3>
+          <p class="text-xs leading-relaxed text-slate-500"><b>{{ jumlahSoalBisaDihapus }} soal {{ selectedMapel }}</b> di kelas {{ kelasId }} akan dipindahkan ke sampah dan masih dapat dipulihkan selama {{ retentionDays }} hari.</p>
+          <div class="flex justify-center gap-2 pt-2">
+            <button @click="showModalHapusSemua = false" :disabled="deletingAll" class="flex-1 rounded-xl bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200 disabled:opacity-50 dark:bg-slate-700 dark:text-slate-300">Batal</button>
+            <button @click="hapusSemuaSoal" :disabled="deletingAll" class="flex-1 rounded-xl bg-red-600 px-4 py-2 text-xs font-semibold text-white shadow hover:bg-red-700 disabled:opacity-50"><span v-if="deletingAll" class="inline-flex items-center gap-2"><AppIcon name="loader" class="h-3.5 w-3.5 animate-spin" /> Menghapus…</span><span v-else>Ya, Hapus Semua</span></button>
+          </div>
+        </div>
+      </div>
+      </Teleport>
+    </ClientOnly>
   </div>
 </template>
 
@@ -460,6 +482,7 @@ import {
   setDoc,
 } from "firebase/firestore";
 import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
+import contohSoalCampuran from "../../../../examples/contoh-soal-campuran-kelas-4.csv?raw";
 
 definePageMeta({
   middleware: "auth",
@@ -475,6 +498,7 @@ const schoolName = computed(() => String(route.query.sekolah || "Sekolah Saya"))
 const { db, storage } = useFirebase();
 const { user, initAuth } = useAuth();
 const { catatAktivitas } = useAuditLog();
+const { success, error: toastError, warning } = useToast();
 
 const mapelAjar = ref([]);
 const selectedMapel = ref("");
@@ -499,6 +523,7 @@ const showModalForm = ref(false);
 const isEditMode = ref(false);
 const editSoalId = ref(null);
 const isSubmitting = ref(false);
+const importingSpreadsheet = ref(false);
 const fileInputRef = ref(null);
 
 const formSoal = ref({
@@ -520,6 +545,16 @@ const formSoal = ref({
 // State Modal Konfirmasi Hapus
 const showModalHapus = ref(false);
 const targetHapusSoal = ref(null);
+const showModalHapusSemua = ref(false);
+const deletingAll = ref(false);
+const jumlahSoalBisaDihapus = computed(() => daftarSoal.value.filter(soal => soal.status !== "sampah").length);
+const overlayLoading = computed(() => {
+  if (importingSpreadsheet.value) return { show: true, title: "Mengimpor bank soal", description: "Membaca file dan menyusun soal ke dalam kelas Anda." };
+  if (deletingAll.value) return { show: true, title: "Memindahkan soal", description: "Soal sedang dipindahkan dengan aman ke tempat sampah." };
+  if (isSubmitting.value) return { show: true, title: isEditMode.value ? "Memperbarui soal" : "Menyimpan soal baru", description: "Sedikit lagi, perubahan sedang disimpan ke bank soal." };
+  if (loadingData.value) return { show: true, title: "Membuka bank soal", description: `Menyiapkan soal ${selectedMapel.value || "kelas"} untuk Anda.` };
+  return { show: false, title: "", description: "" };
+});
 
 // Computed Statistik Soal
 const stats = computed(() => {
@@ -598,13 +633,6 @@ const loadSoal = async () => {
     daftarSoal.value = assignmentId.value === "legacy"
       ? semuaSoal.filter((soal) => !soal.assignmentId || soal.assignmentId === "legacy")
       : semuaSoal.filter((soal) => soal.assignmentId === assignmentId.value);
-    const batasSampah = Date.now() - retentionDays.value * 86400000;
-    const kedaluwarsa = daftarSoal.value.filter(soal => soal.status === "sampah" && (soal.deletedAt?.toMillis?.() || new Date(soal.deletedAt || 0).getTime()) < batasSampah);
-    if (kedaluwarsa.length) {
-      await Promise.all(kedaluwarsa.map(soal => deleteDoc(doc(db, "soal", soal.id))));
-      daftarSoal.value = daftarSoal.value.filter(soal => !kedaluwarsa.some(item => item.id === soal.id));
-      await catatAktivitas("sampah_dibersihkan", { jumlah: kedaluwarsa.length });
-    }
   } catch (e) {
     console.error("Gagal memuat soal:", e);
   } finally {
@@ -616,7 +644,7 @@ const handleFileUpload = async (e) => {
   const file = e.target.files[0];
   if (!file) return;
   if (file.size > 2 * 1024 * 1024) {
-    alert("Ukuran gambar terlalu besar! Maksimal 2 MB.");
+    warning("Ukuran gambar terlalu besar. Maksimal 2 MB.");
     if (fileInputRef.value) fileInputRef.value.value = "";
     return;
   }
@@ -627,7 +655,7 @@ const handleFileUpload = async (e) => {
     formSoal.value.imageUrl = await getDownloadURL(target);
   } catch (error) {
     console.error("Gagal upload gambar:", error);
-    alert("Upload gambar gagal. Pastikan Firebase Storage dan rules sudah aktif.");
+    toastError("Upload gambar gagal. Pastikan Firebase Storage dan rules sudah aktif.");
   }
 };
 
@@ -637,8 +665,8 @@ const hapusGambar = () => {
 };
 const handleOpsiImage = async (event, kunci) => {
   const file = event.target.files?.[0]; if (!file) return;
-  if (file.size > 2 * 1024 * 1024) { alert("Ukuran gambar maksimal 2 MB."); return; }
-  try { const target = storageRef(storage, `soal/${user.value.uid}/${assignmentId.value}/opsi-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "-")}`); await uploadBytes(target, file, { contentType: file.type }); formSoal.value.opsiGambar[kunci] = await getDownloadURL(target); } catch (error) { console.error(error); alert("Upload gambar opsi gagal."); }
+  if (file.size > 2 * 1024 * 1024) { warning("Ukuran gambar maksimal 2 MB."); return; }
+  try { const target = storageRef(storage, `soal/${user.value.uid}/${assignmentId.value}/opsi-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "-")}`); await uploadBytes(target, file, { contentType: file.type }); formSoal.value.opsiGambar[kunci] = await getDownloadURL(target); } catch (err) { console.error(err); toastError("Upload gambar opsi gagal."); }
 };
 
 // Handler Buka Form Modal
@@ -703,14 +731,14 @@ const simpanSoal = async () => {
   const pertanyaanClean = formSoal.value.pertanyaan.trim();
 
   if (!pertanyaanClean) {
-    alert("Harap isi pertanyaan!");
+    warning("Harap isi pertanyaan.");
     return;
   }
   if (
     formSoal.value.tipe === "pg" &&
     (!formSoal.value.opsi.a || !formSoal.value.opsi.b)
   ) {
-    alert("Harap isi minimal pilihan A dan B untuk soal Pilihan Ganda!");
+    warning("Harap isi minimal pilihan A dan B untuk soal pilihan ganda.");
     return;
   }
 
@@ -721,7 +749,7 @@ const simpanSoal = async () => {
   });
 
   if (isDuplicate) {
-    alert("Pertanyaan soal ini sudah ada di daftar!");
+    warning("Pertanyaan soal ini sudah ada di daftar.");
     return;
   }
 
@@ -767,7 +795,7 @@ const simpanSoal = async () => {
     await loadSoal();
   } catch (e) {
     console.error("Gagal menyimpan soal:", e);
-    alert("Terjadi kesalahan saat menyimpan soal.");
+    toastError("Terjadi kesalahan saat menyimpan soal.");
   } finally {
     isSubmitting.value = false;
   }
@@ -790,6 +818,28 @@ const eksekusiHapusSoal = async () => {
   } catch (e) {
     console.error("Gagal menghapus soal:", e);
   }
+};
+
+const hapusSemuaSoal = async () => {
+  const soalYangDihapus = daftarSoal.value.filter(soal => soal.status !== "sampah");
+  if (!soalYangDihapus.length || deletingAll.value) return;
+  deletingAll.value = true;
+  try {
+    const waktuHapus = new Date();
+    for (let awal = 0; awal < soalYangDihapus.length; awal += 500) {
+      const batch = writeBatch(db);
+      soalYangDihapus.slice(awal, awal + 500).forEach(soal => batch.update(doc(db, "soal", soal.id), { status: "sampah", deletedAt: waktuHapus, updatedAt: waktuHapus }));
+      await batch.commit();
+    }
+    await catatAktivitas("semua_soal_dipindah_ke_sampah", { jumlah: soalYangDihapus.length, mapel: selectedMapel.value, kelas: Number(kelasId) });
+    showModalHapusSemua.value = false;
+    selectedIds.value = [];
+    await loadSoal();
+    success(`${soalYangDihapus.length} soal berhasil dipindahkan ke sampah.`);
+  } catch (error) {
+    console.error("Gagal menghapus semua soal:", error);
+    toastError("Gagal menghapus semua soal. Silakan coba lagi.");
+  } finally { deletingAll.value = false; }
 };
 
 const pulihkanSoal = async soal => {
@@ -845,24 +895,35 @@ const metadataImport = data => ({
   materi: String(data.materi || "").trim(), kurikulum: String(data.kurikulum || "").trim(), tujuanPembelajaran: String(data.tujuanPembelajaran || "").trim(),
   tags: String(data.tags || "").split(",").map(tag => tag.trim().toLowerCase()).filter(Boolean).slice(0, 12),
 });
+const importCsvText = async (text) => {
+  const rows = parseCsv(text); const headers = rows.shift()?.map(h => h.trim().replace(/^\ufeff/, ""));
+  if (!headers || !requiredCsvHeader.every(h => headers.includes(h))) throw new Error("Format kolom tidak sesuai template");
+  let imported = 0;
+  for (const row of rows) { const data = Object.fromEntries(headers.map((h, i) => [h, row[i]?.trim() || ""])); if (!data.pertanyaan) continue; const tipe = data.tipe.toLowerCase() === "essay" ? "essay" : "pg"; await addDoc(collection(db, "soal"), { userId: user.value.uid, kelas: Number(kelasId), mapel: selectedMapel.value, assignmentId: assignmentId.value, jenjang: jenjang.value, namaSekolah: schoolName.value, tipe, ...metadataImport(data), pertanyaan: data.pertanyaan, imageUrl: "", opsi: tipe === "pg" ? { a: data.opsiA, b: data.opsiB, c: data.opsiC, d: data.opsiD } : null, opsiGambar: null, kunciJawaban: tipe === "pg" ? data.kunciJawaban.toLowerCase() : data.kunciJawaban, dipakai: false, jumlahDicetak: 0, createdAt: new Date(), updatedAt: new Date() }); imported++; }
+  return imported;
+};
 const importCsv = async (event) => {
   const file = event.target.files?.[0]; if (!file) return;
+  importingSpreadsheet.value = true;
   try {
-    const rows = parseCsv(await file.text()); const headers = rows.shift()?.map(h => h.trim().replace(/^\ufeff/, ""));
-    if (!headers || !requiredCsvHeader.every(h => headers.includes(h))) throw new Error("Format kolom tidak sesuai template");
-    let imported = 0;
-    for (const row of rows) { const data = Object.fromEntries(headers.map((h, i) => [h, row[i]?.trim() || ""])); if (!data.pertanyaan) continue; const tipe = data.tipe.toLowerCase() === "essay" ? "essay" : "pg"; await addDoc(collection(db, "soal"), { userId: user.value.uid, kelas: Number(kelasId), mapel: selectedMapel.value, assignmentId: assignmentId.value, jenjang: jenjang.value, namaSekolah: schoolName.value, tipe, ...metadataImport(data), pertanyaan: data.pertanyaan, imageUrl: "", opsi: tipe === "pg" ? { a: data.opsiA, b: data.opsiB, c: data.opsiC, d: data.opsiD } : null, kunciJawaban: tipe === "pg" ? data.kunciJawaban.toLowerCase() : data.kunciJawaban, dipakai: false, jumlahDicetak: 0, createdAt: new Date(), updatedAt: new Date() }); imported++; }
-    await loadSoal(); alert(`${imported} soal berhasil diimpor.`);
-  } catch (error) { console.error(error); alert(`Import gagal: ${error.message}`); } finally { event.target.value = ""; }
+    const imported = await importCsvText(await file.text());
+    await loadSoal(); success(`${imported} soal berhasil diimpor.`);
+  } catch (error) { console.error(error); toastError(`Import gagal: ${error.message}`); } finally { event.target.value = ""; importingSpreadsheet.value = false; }
 };
-
 const excelModule = async () => { const module = await import("exceljs"); return module.default || module; };
 const unduhExcelBuffer = async (workbook, nama) => { const buffer = await workbook.xlsx.writeBuffer(); const url = URL.createObjectURL(new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" })); const link = document.createElement("a"); link.href = url; link.download = nama; link.click(); URL.revokeObjectURL(url); };
 const downloadTemplateExcel = async () => {
   const ExcelJS = await excelModule(); const workbook = new ExcelJS.Workbook(); const sheet = workbook.addWorksheet("Template Soal");
-  sheet.addRows([csvHeader, ["pg", "mudah", "aktif", "ganjil", "Perkalian", "Kurikulum Merdeka - Fase B", "Siswa mampu menghitung perkalian", "numerasi, perkalian", "Contoh pertanyaan?", "Jawaban A", "Jawaban B", "Jawaban C", "Jawaban D", "a"], ["essay", "sedang", "draft", "genap", "Kebugaran", "Kurikulum Merdeka - Fase B", "Siswa mampu menjelaskan kebugaran", "kebugaran", "Jelaskan jawaban Anda", "", "", "", "", "Pedoman jawaban"]]);
-  [12, 18, 12, 12, 24, 30, 42, 28, 50, 25, 25, 25, 25, 24].forEach((width, index) => { sheet.getColumn(index + 1).width = width; }); sheet.getRow(1).font = { bold: true };
-  await unduhExcelBuffer(workbook, "template-soal.xlsx");
+  sheet.addRows(parseCsv(contohSoalCampuran));
+  [12, 18, 12, 12, 24, 30, 42, 28, 50, 25, 25, 25, 25, 24].forEach((width, index) => { sheet.getColumn(index + 1).width = width; });
+  sheet.getRow(1).font = { bold: true, color: { argb: "FFFFFFFF" } };
+  sheet.getRow(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2563EB" } };
+  sheet.getRow(1).alignment = { vertical: "middle", horizontal: "center" };
+  sheet.getRow(1).height = 24;
+  sheet.views = [{ state: "frozen", ySplit: 1 }];
+  sheet.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: csvHeader.length } };
+  sheet.eachRow((row, number) => { if (number > 1) row.alignment = { vertical: "top", wrapText: true }; });
+  await unduhExcelBuffer(workbook, "contoh-soal-campuran-kelas-4.xlsx");
 };
 const exportExcel = async () => {
   const ExcelJS = await excelModule(); const workbook = new ExcelJS.Workbook(); const sheet = workbook.addWorksheet("Bank Soal"); sheet.addRow(csvHeader); sheet.getRow(1).font = { bold: true };
@@ -872,14 +933,15 @@ const exportExcel = async () => {
 const importSpreadsheet = async (event) => {
   const file = event.target.files?.[0]; if (!file) return;
   if (file.name.toLowerCase().endsWith('.csv')) return importCsv(event);
+  importingSpreadsheet.value = true;
   try {
     const ExcelJS = await excelModule(); const workbook = new ExcelJS.Workbook(); await workbook.xlsx.load(await file.arrayBuffer()); const sheet = workbook.worksheets[0]; if (!sheet) throw new Error('Worksheet tidak ditemukan');
     const headers = sheet.getRow(1).values.slice(1).map(value => String(value || '').trim()); if (!requiredCsvHeader.every(key => headers.includes(key))) throw new Error('Format kolom tidak sesuai template');
     const dataRows = []; sheet.eachRow((row, number) => { if (number === 1) return; const data = {}; headers.forEach((header, index) => { data[header] = row.getCell(index + 1).text || ''; }); if (String(data.pertanyaan || '').trim()) dataRows.push(data); });
     let imported = 0;
     for (const data of dataRows) { if (!String(data.pertanyaan).trim()) continue; const tipe = String(data.tipe).toLowerCase() === 'essay' ? 'essay' : 'pg'; await addDoc(collection(db, 'soal'), { userId: user.value.uid, kelas: Number(kelasId), mapel: selectedMapel.value, assignmentId: assignmentId.value, jenjang: jenjang.value, namaSekolah: schoolName.value, tipe, ...metadataImport(data), pertanyaan: String(data.pertanyaan).trim(), imageUrl: '', opsi: tipe === 'pg' ? { a: String(data.opsiA), b: String(data.opsiB), c: String(data.opsiC), d: String(data.opsiD) } : null, opsiGambar: null, kunciJawaban: tipe === 'pg' ? String(data.kunciJawaban).toLowerCase() : String(data.kunciJawaban || ''), dipakai: false, jumlahDicetak: 0, createdAt: new Date(), updatedAt: new Date() }); imported++; }
-    await loadSoal(); alert(`${imported} soal berhasil diimpor dari Excel.`);
-  } catch (error) { console.error(error); alert(`Import Excel gagal: ${error.message}`); } finally { event.target.value = ''; }
+    await loadSoal(); success(`${imported} soal berhasil diimpor dari Excel.`);
+  } catch (error) { console.error(error); toastError(`Import Excel gagal: ${error.message}`); } finally { event.target.value = ''; importingSpreadsheet.value = false; }
 };
 
 watch(selectedMapel, () => {
