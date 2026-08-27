@@ -1,75 +1,51 @@
-# Nuxt Minimal Starter
+# Soalify / TeachBank
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+Aplikasi Nuxt 3 untuk mengelola bank soal guru, menyusun paket ujian, mencetak lembar siswa dan kunci, serta menganalisis hasil ujian. Data pengguna disimpan di Firebase dan dipisahkan berdasarkan akun guru.
 
-## Setup
+## Fitur utama
 
-Make sure to install dependencies:
+- Bank soal PG dan uraian dengan gambar, rumus KaTeX, pembahasan, CP/TP, materi, tag, serta level kognitif C1–C6.
+- Pemeriksaan kualitas dan kemiripan soal, filter lanjutan, perubahan massal, sampah, dan pagination.
+- Impor/ekspor CSV dan Excel, draft otomatis, backup JSON tervalidasi, serta pencegahan duplikat saat pemulihan.
+- Penyusun ujian dengan kisi-kisi tingkat kesulitan, paket A/B, pengacakan opsi, template tata letak, Word/PDF, kunci guru, dan lembar jawaban siswa.
+- Analisis nilai dan tingkat kesukaran butir dari hasil siswa.
+- Ruang kolaborasi berbasis UID dengan izin lihat/salin atau edit.
+- Audit aktivitas, App Check, aturan kepemilikan Firestore, dan log error lokal terbatas.
+
+## Menjalankan proyek
+
+Salin `.env.example` menjadi `.env`, isi konfigurasi Firebase, lalu jalankan:
 
 ```bash
-# npm
 npm install
-
-# pnpm
-pnpm install
-
-# yarn
-yarn install
-
-# bun
-bun install
-```
-
-## Development Server
-
-Start the development server on `http://localhost:3000`:
-
-```bash
-# npm
 npm run dev
-
-# pnpm
-pnpm dev
-
-# yarn
-yarn dev
-
-# bun
-bun run dev
 ```
 
-## Production
+Aplikasi tersedia di `http://localhost:3000`.
 
-Build the application for production:
+## Pemeriksaan kualitas
 
 ```bash
-# npm
+npm test
 npm run build
-
-# pnpm
-pnpm build
-
-# yarn
-yarn build
-
-# bun
-bun run build
+# atau keduanya
+npm run check
 ```
 
-Locally preview production build:
+## Firebase
+
+Deploy aturan setelah perubahan model data:
 
 ```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
+firebase deploy --only firestore:rules,storage
 ```
 
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+Koleksi utama: `soal`, `pengaturanGuru`, `riwayatUjian`, `analisisUjian`, `ruangKolaborasi`, `templateUjian`, `kopUjian`, `draftGuru`, dan `auditAktivitas`. Jangan menggunakan rules permisif pada produksi.
+
+## Format impor hasil ujian
+
+CSV menggunakan kolom `nama,nomor,jawaban`; jawaban dipisahkan `|`, misalnya `Budi,01,a|c|b|d`. Gunakan riwayat cetak yang sesuai agar urutan kunci sama.
+
+## Catatan kolaborasi
+
+Guru membagikan UID dari halaman Akun kepada pemilik ruang. Pemilik memasukkan UID ketika membuat ruang. Salinan soal disimpan di dokumen ruang sehingga perubahan sumber tidak diam-diam mengubah paket bersama.

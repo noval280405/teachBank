@@ -26,6 +26,7 @@
             <input type="checkbox" v-model="tampilkanKunci" class="rounded text-brand-600" />
             <span>Kunci Jawaban Guru</span>
           </label>
+          <label class="flex items-center gap-1.5 text-xs font-semibold cursor-pointer select-none"><input type="checkbox" v-model="tampilkanLembarJawaban" class="rounded text-brand-600" /><span>Lembar Jawaban</span></label>
 
           <button 
             @click="triggerPrint" 
@@ -155,6 +156,8 @@
 
         <footer v-if="printData.layoutUjian?.footer" class="mt-8 border-t border-slate-300 pt-2 text-center font-sans text-[10px] text-slate-500">{{ printData.layoutUjian.footer }}</footer>
 
+        <div v-if="tampilkanLembarJawaban" class="break-before-page pt-6 font-sans"><h3 class="text-center text-base font-bold uppercase">Lembar Jawaban Siswa</h3><p class="mt-1 text-center text-xs">{{ printData.mapel }} · Kelas {{ printData.kelas }} · Paket {{ paketAktif }}</p><div class="mt-5 grid grid-cols-2 gap-3 text-xs"><p>Nama: ................................................</p><p>No. Absen: ........................</p></div><div class="mt-5 grid grid-cols-2 gap-x-8 gap-y-2 sm:grid-cols-4"><div v-for="(_, index) in activeData.pg" :key="`jawaban-${index}`" class="flex items-center gap-2 border-b border-slate-400 py-1 text-xs"><b class="w-6">{{ index + 1 }}.</b><span>A</span><span>B</span><span>C</span><span>D</span></div></div><div v-if="activeData.essay?.length" class="mt-6"><h4 class="text-xs font-bold">Jawaban uraian</h4><div v-for="(_, index) in activeData.essay" :key="`essay-answer-${index}`" class="mt-3"><b class="text-xs">{{ activeData.pg.length + index + 1 }}.</b><div v-for="line in 4" :key="line" class="h-5 border-b border-dotted border-slate-400" /></div></div></div>
+
         <!-- Lembar Kunci Jawaban TERPISAH (Khusus Pegangan Guru) -->
         <div v-if="tampilkanKunci" class="break-before-page pt-6 border-t-2 border-dashed border-black font-sans">
           <div class="text-center mb-4">
@@ -181,7 +184,7 @@
               class="text-xs p-2 border border-slate-200 rounded bg-slate-50 print:bg-transparent"
             >
               <p class="font-bold">Soal #{{ (activeData.pg?.length || 0) + index + 1 }}:</p>
-              <p class="italic text-slate-700 print:text-black mb-1">{{ soal.kunciJawaban || 'Kebijakan guru dalam memberikan skor.' }}</p>
+              <p class="italic text-slate-700 print:text-black mb-1">{{ soal.pembahasan || soal.kunciJawaban || 'Kebijakan guru dalam memberikan skor.' }}</p>
 
               <!-- Referensi Gambar Soal pada Kunci Jawaban -->
               <div v-if="soal.imageUrl" class="mt-1">
@@ -202,9 +205,16 @@
 </template>
 
 <script setup>
-import { Document, Packer, Paragraph, TextRun, AlignmentType, ImageRun, Math as OfficeMath, MathRun, MathFraction, MathRadical, MathSuperScript, MathSubScript, MathSubSuperScript, Table, TableRow, TableCell, WidthType, BorderStyle, VerticalAlign, PageOrientation } from 'docx'
+definePageMeta({ middleware: 'auth', layout: false })
 
-setPageLayout(false)
+let Document, Packer, Paragraph, TextRun, AlignmentType, ImageRun, OfficeMath, MathRun, MathFraction, MathRadical, MathSuperScript, MathSubScript, MathSubSuperScript, Table, TableRow, TableCell, WidthType, BorderStyle, VerticalAlign, PageOrientation
+let docxReady = false
+const loadDocx = async () => {
+  if (docxReady) return
+  const module = await import('docx')
+  ;({ Document, Packer, Paragraph, TextRun, AlignmentType, ImageRun, Math: OfficeMath, MathRun, MathFraction, MathRadical, MathSuperScript, MathSubScript, MathSubSuperScript, Table, TableRow, TableCell, WidthType, BorderStyle, VerticalAlign, PageOrientation } = module)
+  docxReady = true
+}
 
 const printData = ref({
   infoUjian: {},
@@ -217,6 +227,7 @@ const printData = ref({
 
 const duaKolom = ref(true)
 const tampilkanKunci = ref(false)
+const tampilkanLembarJawaban = ref(false)
 const paketAktif = ref('A')
 const activeData = computed(() => printData.value.pakets?.find(p => p.label === paketAktif.value) || printData.value)
 const jarakSoal = computed(() => ({ rapat: 'mb-2', normal: 'mb-4', lega: 'mb-7' }[printData.value.layoutUjian?.spacing] || 'mb-4'))
@@ -300,6 +311,7 @@ const imageForWord = async (source) => {
 }
 
 const downloadWord = async () => {
+  await loadDocx()
   const data = activeData.value
   const info = printData.value.infoUjian || {}
   const [logoKiri, logoKanan] = await Promise.all([imageForWord(info.logoKiriUrl), imageForWord(info.logoKananUrl)])
@@ -353,7 +365,6 @@ onMounted(() => {
     try {
       printData.value = JSON.parse(data)
       duaKolom.value = Number(printData.value.layoutUjian?.kolom || 2) === 2
-      localStorage.removeItem('teachbank_print_payload')
       const style = document.createElement('style')
       style.textContent = `@media print { @page { size: A4 ${printData.value.layoutUjian?.orientasi === 'landscape' ? 'landscape' : 'portrait'}; margin: 12mm 15mm; } }`
       document.head.appendChild(style)

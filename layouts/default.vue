@@ -4,13 +4,15 @@
     <!-- Navbar Header -->
     <header class="fixed inset-x-0 top-0 z-50 border-b border-slate-200/80 bg-white/90 shadow-sm shadow-slate-900/5 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/90 dark:shadow-black/10">
       <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
-        <div class="flex items-center gap-8">
+        <div class="flex min-w-0 items-center gap-5 lg:gap-8">
         <NuxtLink to="/dashboard" class="group flex items-center gap-2.5">
           <span class="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-md shadow-brand-600/20 transition-transform group-hover:scale-105"><AppIcon name="book" class="h-4.5 w-4.5" /></span><span class="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">Soal<span class="text-brand-600 dark:text-brand-400">ify</span></span>
         </NuxtLink>
 
-        <nav v-if="user" class="hidden items-center gap-1 sm:flex" aria-label="Navigasi utama">
+        <nav v-if="user" class="hidden items-center gap-1 md:flex" aria-label="Navigasi utama">
           <NuxtLink to="/dashboard" :class="navClass('/dashboard', true)"><AppIcon name="home" class="h-4 w-4" /> Dashboard</NuxtLink>
+          <NuxtLink to="/analisis" :class="navClass('/analisis')"><AppIcon name="pie" class="h-4 w-4" /> Analisis</NuxtLink>
+          <NuxtLink to="/kolaborasi" :class="navClass('/kolaborasi')"><AppIcon name="copy" class="h-4 w-4" /> Kolaborasi</NuxtLink>
           <NuxtLink to="/pengaturan" :class="navClass('/pengaturan')"><AppIcon name="settings" class="h-4 w-4" /> Pengaturan</NuxtLink>
         </nav></div>
 
@@ -47,7 +49,7 @@
       <slot />
     </main>
 
-    <nav v-if="user" class="fixed bottom-4 left-1/2 z-40 flex -translate-x-1/2 items-center gap-1 rounded-2xl border border-slate-200/80 bg-white/90 p-1.5 shadow-xl backdrop-blur-xl dark:border-slate-700 dark:bg-slate-900/90 sm:hidden" aria-label="Navigasi mobile"><NuxtLink to="/dashboard" :class="mobileNavClass('/dashboard', true)"><AppIcon name="home" class="h-4 w-4" /> Dashboard</NuxtLink><NuxtLink to="/pengaturan" :class="mobileNavClass('/pengaturan')"><AppIcon name="settings" class="h-4 w-4" /> Pengaturan</NuxtLink></nav>
+    <nav v-if="user" class="fixed inset-x-3 bottom-3 z-40 grid grid-cols-4 rounded-2xl border border-slate-200/80 bg-white/95 p-1.5 shadow-xl backdrop-blur-xl dark:border-slate-700 dark:bg-slate-900/95 md:hidden" aria-label="Navigasi mobile"><NuxtLink to="/dashboard" :class="mobileNavClass('/dashboard', true)"><AppIcon name="home" class="h-4 w-4" /> Bank</NuxtLink><NuxtLink to="/analisis" :class="mobileNavClass('/analisis')"><AppIcon name="pie" class="h-4 w-4" /> Analisis</NuxtLink><NuxtLink to="/kolaborasi" :class="mobileNavClass('/kolaborasi')"><AppIcon name="copy" class="h-4 w-4" /> Tim</NuxtLink><NuxtLink to="/pengaturan" :class="mobileNavClass('/pengaturan')"><AppIcon name="settings" class="h-4 w-4" /> Atur</NuxtLink></nav>
     <AppToast />
   </div>
 </template>
@@ -70,7 +72,7 @@ const navClass = (path, includeChildren = false) => [
 ]
 
 const mobileNavClass = (path, includeChildren = false) => [
-  'inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition',
+  'flex min-w-0 flex-col items-center gap-1 rounded-xl px-2 py-2 text-[10px] font-semibold transition',
   isActive(path, includeChildren)
     ? 'bg-brand-600 text-white shadow-sm'
     : 'text-slate-500 dark:text-slate-400',

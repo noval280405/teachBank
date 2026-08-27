@@ -22,7 +22,7 @@
 </template>
 
 <script setup>
-import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore'
+import { collection, doc, getDoc, getDocs, limit, query, where } from 'firebase/firestore'
 definePageMeta({ middleware: 'auth' })
 const { db } = useFirebase()
 const { user } = useAuth()
@@ -48,5 +48,5 @@ const warnaJenjang = (jenjang) => {
   if (jenjang === 'SMA/SMK') return { card: 'border-amber-200 hover:border-amber-400 dark:border-amber-900/70', decoration: 'bg-amber-50 dark:bg-amber-900/20', number: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300', badge: 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300', arrow: 'border-amber-200 text-amber-600 dark:border-amber-900', divider: 'border-amber-100 dark:border-amber-900/50', text: 'text-amber-500' }
   return { card: 'border-sky-200 hover:border-sky-400 dark:border-sky-900/70', decoration: 'bg-sky-50 dark:bg-sky-900/20', number: 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300', badge: 'bg-sky-100 text-sky-700 dark:bg-sky-900/50 dark:text-sky-300', arrow: 'border-sky-200 text-sky-600 dark:border-sky-900', divider: 'border-sky-100 dark:border-sky-900/50', text: 'text-sky-500' }
 }
-onMounted(async () => { try { if (user.value) { const snap = await getDoc(doc(db, 'pengaturanGuru', user.value.uid)); if (snap.exists()) { const data = snap.data(); penugasan.value = data.penugasan?.length ? data.penugasan : (data.kelasAjar?.length ? [{ id: 'legacy', jenjang: 'SD', namaSekolah: 'Sekolah Saya', kelasAjar: data.kelasAjar, mapelAjar: data.mapelAjar || [] }] : []) } const [drafts, histories] = await Promise.all([getDocs(query(collection(db, 'draftGuru'), where('userId', '==', user.value.uid))), getDocs(query(collection(db, 'riwayatUjian'), where('userId', '==', user.value.uid)))]); pekerjaanTerakhir.value = [...drafts.docs.map(d => ({ id: d.id, jenis: 'Draft', ...d.data() })), ...histories.docs.map(d => ({ id: d.id, jenis: 'Riwayat ujian', ...d.data() }))].sort((a,b) => ((b.updatedAt || b.createdAt)?.seconds || 0) - ((a.updatedAt || a.createdAt)?.seconds || 0)).slice(0, 6) } } finally { loading.value = false } })
+onMounted(async () => { try { if (user.value) { const snap = await getDoc(doc(db, 'pengaturanGuru', user.value.uid)); if (snap.exists()) { const data = snap.data(); penugasan.value = data.penugasan?.length ? data.penugasan : (data.kelasAjar?.length ? [{ id: 'legacy', jenjang: 'SD', namaSekolah: 'Sekolah Saya', kelasAjar: data.kelasAjar, mapelAjar: data.mapelAjar || [] }] : []) } const [drafts, histories] = await Promise.all([getDocs(query(collection(db, 'draftGuru'), where('userId', '==', user.value.uid), limit(12))), getDocs(query(collection(db, 'riwayatUjian'), where('userId', '==', user.value.uid), limit(12)))]); pekerjaanTerakhir.value = [...drafts.docs.map(d => ({ id: d.id, jenis: 'Draft', ...d.data() })), ...histories.docs.map(d => ({ id: d.id, jenis: 'Riwayat ujian', ...d.data() }))].sort((a,b) => ((b.updatedAt || b.createdAt)?.seconds || 0) - ((a.updatedAt || a.createdAt)?.seconds || 0)).slice(0, 6) } } finally { loading.value = false } })
 </script>

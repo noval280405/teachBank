@@ -389,6 +389,7 @@ import {
   deleteDoc,
   increment,
   arrayUnion,
+  limit,
 } from "firebase/firestore";
 
 definePageMeta({ middleware: "auth" });
@@ -503,7 +504,7 @@ const pemeriksaan = computed(() => {
 
 const loadTemplate = async () => {
   if (!user.value) return;
-  const snap = await getDocs(query(collection(db, "templateUjian"), where("userId", "==", user.value.uid)));
+  const snap = await getDocs(query(collection(db, "templateUjian"), where("userId", "==", user.value.uid), limit(30)));
   templateUjian.value = snap.docs.map(item => ({ id: item.id, ...item.data() })).filter(item => item.assignmentId === assignmentId.value);
 };
 const simpanTemplate = async () => {
@@ -583,6 +584,7 @@ const loadSoal = async () => {
       where("userId", "==", user.value.uid),
       where("kelas", "==", kelasId),
       where("mapel", "==", selectedMapel.value),
+      limit(300),
     );
     const snap = await getDocs(q);
     const fetched = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
@@ -739,7 +741,7 @@ const bukaKertasCetak = async (mode = "A") => {
 const loadRiwayat = async () => {
   if (!user.value) return;
   try {
-    const snap = await getDocs(query(collection(db, "riwayatUjian"), where("userId", "==", user.value.uid), where("assignmentId", "==", assignmentId.value)));
+    const snap = await getDocs(query(collection(db, "riwayatUjian"), where("userId", "==", user.value.uid), where("assignmentId", "==", assignmentId.value), limit(20)));
     riwayatUjian.value = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(item => Number(item.kelas) === kelasId).sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0)).slice(0, 10);
   } catch (error) { console.error("Gagal memuat riwayat:", error); }
 };
@@ -750,10 +752,12 @@ const hapusRiwayat = async item => { if (!confirm(`Hapus riwayat "${item.namaUji
 onMounted(async () => {
   try {
     await loadPengaturan();
-    await loadSoal();
-    await loadRiwayat();
-    await loadTemplate();
-    const draft = await getDoc(doc(db, "draftGuru", draftDocId.value));
+    const [, , , draft] = await Promise.all([
+      loadSoal(),
+      loadRiwayat(),
+      loadTemplate(),
+      getDoc(doc(db, "draftGuru", draftDocId.value)),
+    ]);
     if (draft.exists()) { layoutUjian.value = { ...layoutUjian.value, ...draft.data().layoutUjian }; infoUjian.value = { ...infoUjian.value, ...draft.data().infoUjian }; }
   } finally {
     loadingPage.value = false;
@@ -767,6 +771,6 @@ watch([infoUjian, layoutUjian, watermark], () => {
     draftStatus.value = "Menyimpan…";
     try { await setDoc(doc(db, "draftGuru", draftDocId.value), { userId: user.value.uid, assignmentId: assignmentId.value, kelas: kelasId, mapel: selectedMapel.value, infoUjian: { ...infoUjian.value }, layoutUjian: { ...layoutUjian.value }, watermark: watermark.value, updatedAt: new Date() }, { merge: true }); draftStatus.value = "Tersimpan"; }
     catch { draftStatus.value = "Gagal menyimpan"; }
-  }, 1200);
+  }, 2500);
 }, { deep: true });
 </script>
