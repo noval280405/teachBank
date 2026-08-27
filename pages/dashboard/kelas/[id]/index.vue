@@ -117,7 +117,7 @@
         <input ref="csvInput" type="file" accept=".xlsx,.xls,.csv,text/csv" class="hidden" @change="importSpreadsheet" />
         </div>
         <div v-if="showAdvancedFilters" class="mt-3 grid gap-2 border-t border-slate-100 pt-3 dark:border-slate-700 sm:grid-cols-2 lg:grid-cols-5">
-        <select v-model="filterKesulitan" class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold outline-none dark:border-slate-700 dark:bg-slate-900/50"><option value="semua">Semua level</option><option value="mudah">Mudah</option><option value="sedang">Sedang</option><option value="sulit">Sulit</option></select>
+        <select v-model="filterKesulitan" class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold outline-none dark:border-slate-700 dark:bg-slate-900/50"><option value="semua">Semua level</option><option value="belum">Belum dinilai</option><option value="mudah">Mudah</option><option value="sedang">Sedang</option><option value="sulit">Sulit</option></select>
         <select v-model="filterKognitif" class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold outline-none dark:border-slate-700 dark:bg-slate-900/50"><option value="semua">Semua kognitif</option><option v-for="level in levelKognitifOptions" :key="level" :value="level">{{ level }}</option></select>
         <select v-model="filterMateri" class="max-w-40 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold outline-none dark:border-slate-700 dark:bg-slate-900/50"><option value="semua">Semua materi</option><option v-for="materi in daftarMateri" :key="materi" :value="materi">{{ materi }}</option></select>
         <select v-model="filterKualitas" class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold outline-none dark:border-slate-700 dark:bg-slate-900/50"><option value="semua">Semua kualitas</option><option value="siap">Siap pakai</option><option value="perlu-perbaikan">Perlu perbaikan</option></select>
@@ -180,7 +180,7 @@
                 item.tipe === "essay" ? "Essay" : "PG"
               }})
             </span>
-            <span :class="['rounded-full px-2.5 py-1 text-[10px] font-bold capitalize', difficultyClass(item.tingkatKesulitan)]">{{ item.tingkatKesulitan || 'sedang' }}</span>
+            <span :class="['rounded-full px-2.5 py-1 text-[10px] font-bold capitalize', difficultyClass(item.tingkatKesulitan)]">{{ item.tingkatKesulitan || 'belum dinilai' }}</span>
             <span class="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold capitalize text-slate-600 dark:bg-slate-700 dark:text-slate-300">{{ item.status || 'aktif' }}</span>
             <span v-if="item.levelKognitif" class="rounded-full bg-indigo-50 px-2.5 py-1 text-[10px] font-bold text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">{{ item.levelKognitif }}</span>
             <span :class="['rounded-full px-2.5 py-1 text-[10px] font-bold', qualityIssues(item).length ? 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300' : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300']" :title="qualityIssues(item).join(' · ')">{{ qualityIssues(item).length ? `${qualityIssues(item).length} perlu diperbaiki` : 'Siap pakai' }}</span>
@@ -264,6 +264,44 @@
     <div v-if="totalPages > 1" class="flex items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 text-xs dark:border-slate-700 dark:bg-slate-800"><button @click="currentPage--" :disabled="currentPage === 1" class="rounded-lg border px-3 py-1.5 disabled:opacity-40">Sebelumnya</button><span>Halaman {{ currentPage }} dari {{ totalPages }} · {{ filteredAllSoal.length }} soal</span><button @click="currentPage++" :disabled="currentPage === totalPages" class="rounded-lg border px-3 py-1.5 disabled:opacity-40">Berikutnya</button></div>
     <div v-if="hasMoreQuestions" class="text-center"><button @click="loadSoal(true)" :disabled="loadingMore" class="ui-button-secondary"><AppIcon :name="loadingMore ? 'loader' : 'plus'" :class="['h-4 w-4', loadingMore && 'animate-spin']" />{{ loadingMore ? 'Memuat…' : 'Muat 100 soal berikutnya' }}</button><p class="mt-2 text-[11px] text-slate-400">Soal dimuat bertahap agar halaman tetap ringan.</p></div>
 
+    <!-- Dialog Pemulihan Draft -->
+    <ClientOnly>
+      <Teleport to="body">
+        <div
+          v-if="showDraftRecovery"
+          class="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="judul-pemulihan-draft"
+        >
+          <div class="w-full max-w-md overflow-hidden rounded-3xl border border-white/10 bg-white shadow-2xl dark:bg-slate-800">
+            <div class="relative overflow-hidden bg-gradient-to-br from-brand-700 to-brand-500 px-6 pb-8 pt-6 text-white">
+              <div class="absolute -right-8 -top-10 h-32 w-32 rounded-full bg-white/10"></div>
+              <div class="relative grid h-12 w-12 place-items-center rounded-2xl bg-white/15 ring-1 ring-white/20">
+                <AppIcon name="file" class="h-6 w-6" />
+              </div>
+              <h2 id="judul-pemulihan-draft" class="relative mt-4 text-xl font-bold">Draft soal ditemukan</h2>
+              <p class="relative mt-1 text-sm leading-relaxed text-brand-50">Tulisan Anda sebelumnya masih tersimpan. Ingin melanjutkan dari terakhir kali?</p>
+            </div>
+            <div class="space-y-4 p-6">
+              <div class="flex items-start gap-3 rounded-2xl bg-amber-50 p-4 text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+                <AppIcon name="sparkle" class="mt-0.5 h-5 w-5 shrink-0" />
+                <p class="text-xs leading-relaxed">Pilih <b>Lanjutkan draft</b> agar isian lama kembali. Pilih <b>Buang draft</b> untuk memulai soal baru.</p>
+              </div>
+              <div class="flex flex-col-reverse gap-2 sm:flex-row">
+                <button type="button" @click="buangDraft" class="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-red-950/20">
+                  Buang draft
+                </button>
+                <button type="button" @click="lanjutkanDraft" class="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-brand-600/20 transition hover:bg-brand-700">
+                  <AppIcon name="refresh" class="h-4 w-4" /> Lanjutkan draft
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Teleport>
+    </ClientOnly>
+
     <!-- Modal Form Input / Edit Soal -->
     <ClientOnly>
       <Teleport to="body">
@@ -284,7 +322,7 @@
             }})
           </h2><p v-if="!isEditMode" class="mt-1 text-[10px] text-slate-400">{{ formDraftStatus }}</p></div><button @click="showModalForm = false" class="grid h-9 w-9 place-items-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700"><AppIcon name="x" class="h-4 w-4" /></button></div>
 
-          <div class="rounded-xl bg-brand-50 p-3 dark:bg-brand-950/20"><p class="text-xs font-bold text-brand-700 dark:text-brand-300">1. Identitas & kisi-kisi</p><p class="mt-0.5 text-[11px] text-slate-500">Atur tipe, tingkat kesulitan, dan hubungan soal dengan pembelajaran.</p></div>
+          <div class="rounded-xl bg-brand-50 p-3 dark:bg-brand-950/20"><p class="text-xs font-bold text-brand-700 dark:text-brand-300">Buat soal cepat</p><p class="mt-0.5 text-[11px] text-slate-500">Cukup isi tipe, pertanyaan, dan jawaban. Informasi lainnya bersifat opsional.</p></div>
           <div>
             <label class="block text-sm font-medium mb-1">Tipe Soal</label>
             <select
@@ -295,16 +333,7 @@
               <option value="essay">Essay / Uraian</option>
             </select>
           </div>
-          <div><label class="mb-1 block text-sm font-medium">Tingkat Kesulitan</label><div class="grid grid-cols-3 gap-2"><label v-for="level in ['mudah','sedang','sulit']" :key="level" :class="['cursor-pointer rounded-xl border px-3 py-2 text-center text-xs font-bold capitalize transition', formSoal.tingkatKesulitan === level ? difficultyClass(level) : 'border-slate-200 text-slate-500 dark:border-slate-700']"><input v-model="formSoal.tingkatKesulitan" type="radio" :value="level" class="hidden" />{{ level }}</label></div></div>
-          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2"><div><label class="mb-1 block text-xs font-medium">Status</label><select v-model="formSoal.status" class="w-full rounded-xl border border-slate-300 bg-transparent px-3 py-2 text-sm dark:border-slate-600"><option value="aktif">Siap digunakan</option><option value="draft">Draft</option><option value="arsip">Arsip</option></select></div><div><label class="mb-1 block text-xs font-medium">Semester</label><select v-model="formSoal.semester" class="w-full rounded-xl border border-slate-300 bg-transparent px-3 py-2 text-sm dark:border-slate-600"><option value="">Semua</option><option value="ganjil">Ganjil</option><option value="genap">Genap</option></select></div></div>
-          <div class="grid gap-3 sm:grid-cols-2"><div><label class="mb-1 block text-xs font-medium">Bab / Materi</label><input v-model.trim="formSoal.materi" class="w-full rounded-xl border border-slate-300 bg-transparent px-3 py-2 text-sm dark:border-slate-600" placeholder="Contoh: Pecahan" /></div><div><label class="mb-1 block text-xs font-medium">Kurikulum / Fase</label><input v-model.trim="formSoal.kurikulum" class="w-full rounded-xl border border-slate-300 bg-transparent px-3 py-2 text-sm dark:border-slate-600" placeholder="Merdeka · Fase B" /></div></div>
-          <div class="grid gap-3 sm:grid-cols-2"><div><label class="mb-1 block text-xs font-medium">Level kognitif</label><select v-model="formSoal.levelKognitif" class="w-full rounded-xl border border-slate-300 bg-transparent px-3 py-2 text-sm dark:border-slate-600"><option value="">Pilih level</option><option v-for="level in levelKognitifOptions" :key="level" :value="level">{{ level }}</option></select></div><div><label class="mb-1 block text-xs font-medium">Kode CP/TP</label><input v-model.trim="formSoal.kodeCapaian" class="w-full rounded-xl border border-slate-300 bg-transparent px-3 py-2 text-sm dark:border-slate-600" placeholder="Contoh: B.2.1" /></div></div>
-          <div><label class="mb-1 block text-xs font-medium">Tujuan pembelajaran</label><input v-model.trim="formSoal.tujuanPembelajaran" class="w-full rounded-xl border border-slate-300 bg-transparent px-3 py-2 text-sm dark:border-slate-600" placeholder="Siswa mampu…" /></div>
-          <div><label class="mb-1 block text-xs font-medium">Tag (pisahkan dengan koma)</label><input v-model="formSoal.tagInput" class="w-full rounded-xl border border-slate-300 bg-transparent px-3 py-2 text-sm dark:border-slate-600" placeholder="pecahan, hitung, numerasi" /></div>
-          <div><label class="mb-1 block text-xs font-medium">Pembahasan / pedoman jawaban</label><textarea v-model="formSoal.pembahasan" rows="2" class="w-full rounded-xl border border-slate-300 bg-transparent px-3 py-2 text-sm dark:border-slate-600" placeholder="Jelaskan langkah penyelesaian atau rubrik penilaian…" /></div>
-          <div v-if="formQualityIssues.length" class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/20 dark:text-amber-300"><b>Pemeriksaan kualitas:</b><ul class="mt-1 list-disc pl-4"><li v-for="issue in formQualityIssues" :key="issue">{{ issue }}</li></ul></div>
-
-          <div class="rounded-xl bg-brand-50 p-3 dark:bg-brand-950/20"><p class="text-xs font-bold text-brand-700 dark:text-brand-300">2. Isi soal</p><p class="mt-0.5 text-[11px] text-slate-500">Tuliskan pertanyaan dengan jelas dan tambahkan gambar bila diperlukan.</p></div>
+          <div class="rounded-xl bg-brand-50 p-3 dark:bg-brand-950/20"><p class="text-xs font-bold text-brand-700 dark:text-brand-300">1. Isi soal</p><p class="mt-0.5 text-[11px] text-slate-500">Tuliskan pertanyaan dengan jelas dan tambahkan gambar bila diperlukan.</p></div>
           <div>
             <label class="block text-sm font-medium mb-1"
               >Pertanyaan Soal</label
@@ -395,6 +424,12 @@
             </div>
             <div v-if="Object.values(formSoal.opsiGambar || {}).some(Boolean)" class="grid grid-cols-2 gap-2 pt-2"><div v-for="kunci in ['a','b','c','d']" :key="`preview-${kunci}`" v-show="formSoal.opsiGambar?.[kunci]" class="relative rounded-lg border border-slate-200 p-2 dark:border-slate-700"><button type="button" @click="formSoal.opsiGambar[kunci] = ''" class="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-white text-red-500 shadow"><AppIcon name="x" class="h-3 w-3" /></button><p class="mb-1 text-[10px] font-bold uppercase">Opsi {{ kunci }}</p><img :src="formSoal.opsiGambar[kunci]" class="h-20 w-full object-contain" /></div></div>
           </div>
+
+          <div v-if="formQualityIssues.length" class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/20 dark:text-amber-300"><b>Periksa sebelum menyimpan:</b><ul class="mt-1 list-disc pl-4"><li v-for="issue in formQualityIssues" :key="issue">{{ issue }}</li></ul></div>
+
+          <details class="rounded-xl border border-slate-200 dark:border-slate-700"><summary class="cursor-pointer list-none p-4"><div class="flex items-center justify-between gap-3"><div><p class="text-sm font-bold">2. Materi & pembahasan <span class="font-normal text-slate-400">(opsional)</span></p><p class="mt-1 text-[11px] text-slate-500">Isi bila ingin mengelompokkan soal atau memberikan pembahasan.</p></div><AppIcon name="plus" class="h-4 w-4 text-slate-400" /></div></summary><div class="space-y-3 border-t border-slate-100 p-4 dark:border-slate-700"><div><label class="mb-1 block text-xs font-medium">Tingkat kesulitan awal</label><div class="grid grid-cols-2 gap-2 sm:grid-cols-4"><label v-for="level in difficultyOptions" :key="level.value" :class="['cursor-pointer rounded-xl border px-2 py-2 text-center text-xs font-bold transition', formSoal.tingkatKesulitan === level.value ? difficultyClass(level.value) : 'border-slate-200 text-slate-500 dark:border-slate-700']"><input v-model="formSoal.tingkatKesulitan" type="radio" :value="level.value" class="hidden" />{{ level.label }}</label></div><p class="mt-1.5 text-[10px] text-slate-400">Nantinya dapat diperbarui berdasarkan persentase jawaban benar siswa.</p></div><div class="grid gap-3 sm:grid-cols-2"><div><label class="mb-1 block text-xs font-medium">Bab / materi</label><input v-model.trim="formSoal.materi" class="ui-input" placeholder="Contoh: Pecahan" /></div><div><label class="mb-1 block text-xs font-medium">Semester</label><select v-model="formSoal.semester" class="ui-input"><option value="">Tidak ditentukan</option><option value="ganjil">Ganjil</option><option value="genap">Genap</option></select></div></div><div><label class="mb-1 block text-xs font-medium">Pembahasan / pedoman jawaban</label><textarea v-model="formSoal.pembahasan" rows="3" class="ui-input" placeholder="Langkah penyelesaian atau rubrik penilaian…" /></div><div><label class="mb-1 block text-xs font-medium">Status</label><select v-model="formSoal.status" class="ui-input"><option value="aktif">Siap digunakan</option><option value="draft">Simpan sebagai draft</option><option value="arsip">Arsip</option></select></div></div></details>
+
+          <details class="rounded-xl border border-slate-200 dark:border-slate-700"><summary class="cursor-pointer list-none p-4"><div class="flex items-center justify-between gap-3"><div><p class="text-sm font-bold">3. Kisi-kisi pembelajaran <span class="font-normal text-slate-400">(lanjutan)</span></p><p class="mt-1 text-[11px] text-slate-500">Untuk kebutuhan administrasi, kisi-kisi, atau pemetaan kurikulum.</p></div><AppIcon name="plus" class="h-4 w-4 text-slate-400" /></div></summary><div class="space-y-3 border-t border-slate-100 p-4 dark:border-slate-700"><div class="grid gap-3 sm:grid-cols-2"><div><label class="mb-1 block text-xs font-medium">Kurikulum / fase</label><input v-model.trim="formSoal.kurikulum" class="ui-input" placeholder="Contoh: Fase B" /></div><div><label class="mb-1 block text-xs font-medium">Level kognitif</label><select v-model="formSoal.levelKognitif" class="ui-input"><option value="">Tidak ditentukan</option><option v-for="level in levelKognitifOptions" :key="level" :value="level">{{ level }}</option></select></div></div><div><label class="mb-1 block text-xs font-medium">Kode CP/TP</label><input v-model.trim="formSoal.kodeCapaian" class="ui-input" placeholder="Contoh: B.2.1" /></div><div><label class="mb-1 block text-xs font-medium">Tujuan pembelajaran</label><input v-model.trim="formSoal.tujuanPembelajaran" class="ui-input" placeholder="Siswa mampu…" /></div><div><label class="mb-1 block text-xs font-medium">Tag</label><input v-model="formSoal.tagInput" class="ui-input" placeholder="Pisahkan dengan koma, misalnya: pecahan, numerasi" /></div></div></details>
 
           <div
             class="sticky -bottom-4 z-20 -mx-4 -mb-4 flex flex-col-reverse gap-2 border-t border-slate-200 bg-white px-4 pb-4 pt-3 dark:border-slate-700 dark:bg-slate-800 sm:-bottom-6 sm:-mx-6 sm:-mb-6 sm:flex-row sm:justify-end sm:px-6 sm:pb-6"
@@ -541,12 +576,15 @@ const showAdvancedFilters = ref(false);
 const currentPage = ref(1);
 const pageSize = 25;
 const levelKognitifOptions = ["C1 · Mengingat", "C2 · Memahami", "C3 · Menerapkan", "C4 · Menganalisis", "C5 · Mengevaluasi", "C6 · Mencipta"];
+const difficultyOptions = [{ value: "", label: "Belum dinilai" }, { value: "mudah", label: "Mudah" }, { value: "sedang", label: "Sedang" }, { value: "sulit", label: "Sulit" }];
 const selectedIds = ref([]);
 const bulkDifficulty = ref("");
 const retentionDays = ref(30);
 const formDraftStatus = ref("Draft otomatis aktif");
 let formDraftTimer;
 const questionDraftDocId = computed(() => `${user.value?.uid || "guru"}_${assignmentId.value}_${kelasId}_${String(selectedMapel.value || "mapel").replace(/[^a-zA-Z0-9_-]/g, "_")}_soal`);
+const showDraftRecovery = ref(false);
+const pendingQuestionDraft = ref(null);
 const csvInput = ref(null);
 
 // State Modal Form (Tambah & Edit)
@@ -564,7 +602,7 @@ const formSoal = ref({
   opsi: { a: "", b: "", c: "", d: "" },
   opsiGambar: { a: "", b: "", c: "", d: "" },
   kunciJawaban: "a",
-  tingkatKesulitan: "sedang",
+  tingkatKesulitan: "",
   status: "aktif",
   semester: "",
   materi: "",
@@ -609,7 +647,8 @@ const filteredAllSoal = computed(() => {
   return daftarSoal.value.filter((item) => {
     if (filterTipe.value === "pg" && item.tipe === "essay") return false;
     if (filterTipe.value === "essay" && item.tipe !== "essay") return false;
-    if (filterKesulitan.value !== "semua" && (item.tingkatKesulitan || "sedang") !== filterKesulitan.value) return false;
+    if (filterKesulitan.value === "belum" && item.tingkatKesulitan) return false;
+    if (!["semua", "belum"].includes(filterKesulitan.value) && item.tingkatKesulitan !== filterKesulitan.value) return false;
     if (filterKognitif.value !== "semua" && item.levelKognitif !== filterKognitif.value) return false;
     if (filterMateri.value !== "semua" && item.materi !== filterMateri.value) return false;
     if (filterKualitas.value === "siap" && qualityIssues(item).length) return false;
@@ -733,14 +772,36 @@ const bukaModalTambah = async () => {
     opsi: { a: "", b: "", c: "", d: "" },
     opsiGambar: { a: "", b: "", c: "", d: "" },
     kunciJawaban: "a",
-    tingkatKesulitan: "sedang",
+    tingkatKesulitan: "",
     status: "aktif", semester: "", materi: "", kurikulum: "", tujuanPembelajaran: "", kodeCapaian: "", levelKognitif: "", pembahasan: "", tagInput: "",
   };
   if (fileInputRef.value) fileInputRef.value.value = "";
   try {
     const draft = await getDoc(doc(db, "draftGuru", questionDraftDocId.value));
-    if (draft.exists() && draft.data().formSoal?.pertanyaan && confirm("Lanjutkan draft soal yang belum selesai?")) formSoal.value = { ...formSoal.value, ...draft.data().formSoal };
+    if (draft.exists() && draft.data().formSoal?.pertanyaan?.trim()) {
+      pendingQuestionDraft.value = draft.data().formSoal;
+      showDraftRecovery.value = true;
+      return;
+    }
   } catch (error) { console.warn("Draft soal tidak dapat dimuat:", error); }
+  showModalForm.value = true;
+};
+
+const lanjutkanDraft = () => {
+  formSoal.value = { ...formSoal.value, ...pendingQuestionDraft.value };
+  pendingQuestionDraft.value = null;
+  showDraftRecovery.value = false;
+  formDraftStatus.value = "Draft dipulihkan";
+  showModalForm.value = true;
+};
+
+const buangDraft = async () => {
+  pendingQuestionDraft.value = null;
+  showDraftRecovery.value = false;
+  await deleteDoc(doc(db, "draftGuru", questionDraftDocId.value)).catch((error) => {
+    console.warn("Draft soal tidak dapat dihapus:", error);
+  });
+  formDraftStatus.value = "Draft otomatis aktif";
   showModalForm.value = true;
 };
 
@@ -754,7 +815,7 @@ const bukaModalEdit = (soal) => {
     opsi: soal.opsi ? { ...soal.opsi } : { a: "", b: "", c: "", d: "" },
     opsiGambar: soal.opsiGambar ? { ...soal.opsiGambar } : { a: "", b: "", c: "", d: "" },
     kunciJawaban: soal.kunciJawaban || "a",
-    tingkatKesulitan: soal.tingkatKesulitan || "sedang",
+    tingkatKesulitan: soal.tingkatKesulitan || "",
     status: soal.status || "aktif", semester: soal.semester || "", materi: soal.materi || "", kurikulum: soal.kurikulum || "", tujuanPembelajaran: soal.tujuanPembelajaran || "", kodeCapaian: soal.kodeCapaian || "", levelKognitif: soal.levelKognitif || "", pembahasan: soal.pembahasan || "", tagInput: (soal.tags || []).join(", "),
   };
   if (fileInputRef.value) fileInputRef.value.value = "";
@@ -772,7 +833,7 @@ const duplikatSoal = (soal) => {
     opsi: soal.opsi ? { ...soal.opsi } : { a: "", b: "", c: "", d: "" },
     opsiGambar: soal.opsiGambar ? { ...soal.opsiGambar } : { a: "", b: "", c: "", d: "" },
     kunciJawaban: soal.kunciJawaban || "a",
-    tingkatKesulitan: soal.tingkatKesulitan || "sedang",
+    tingkatKesulitan: soal.tingkatKesulitan || "",
     status: "draft", semester: soal.semester || "", materi: soal.materi || "", kurikulum: soal.kurikulum || "", tujuanPembelajaran: soal.tujuanPembelajaran || "", kodeCapaian: soal.kodeCapaian || "", levelKognitif: soal.levelKognitif || "", pembahasan: soal.pembahasan || "", tagInput: (soal.tags || []).join(", "),
   };
   if (fileInputRef.value) fileInputRef.value.value = "";
@@ -915,7 +976,7 @@ const difficultyClass = (level) => ({
   mudah: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
   sedang: "border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
   sulit: "border-red-200 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300",
-}[level || "sedang"]);
+}[level] || "border-slate-200 bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300");
 
 const formatTanggal = (value) => {
   const date = value?.toDate ? value.toDate() : new Date(value);
@@ -932,7 +993,7 @@ const csvHeader = ["tipe", "tingkatKesulitan", "status", "semester", "materi", "
 const requiredCsvHeader = ["tipe", "tingkatKesulitan", "pertanyaan", "opsiA", "opsiB", "opsiC", "opsiD", "kunciJawaban"];
 const downloadTemplateCsv = () => downloadFile(`${csvHeader.join(",")}\npg,mudah,aktif,ganjil,Perkalian,Kurikulum Merdeka - Fase B,Siswa mampu menghitung perkalian,"numerasi, perkalian",Contoh pertanyaan?,Jawaban A,Jawaban B,Jawaban C,Jawaban D,a\nessay,sedang,draft,genap,Kebugaran,Kurikulum Merdeka - Fase B,Siswa mampu menjelaskan kebugaran,kebugaran,Jelaskan jawaban Anda,,,,,Pedoman jawaban`, "template-soal.csv");
 const exportCsv = () => {
-  const rows = daftarSoal.value.map(s => [s.tipe || "pg", s.tingkatKesulitan || "sedang", s.status || "aktif", s.semester || "", s.materi || "", s.kurikulum || "", s.tujuanPembelajaran || "", s.kodeCapaian || "", s.levelKognitif || "", (s.tags || []).join(", "), s.pertanyaan, s.opsi?.a, s.opsi?.b, s.opsi?.c, s.opsi?.d, s.kunciJawaban, s.pembahasan || ""].map(csvEscape).join(","));
+  const rows = daftarSoal.value.map(s => [s.tipe || "pg", s.tingkatKesulitan || "", s.status || "aktif", s.semester || "", s.materi || "", s.kurikulum || "", s.tujuanPembelajaran || "", s.kodeCapaian || "", s.levelKognitif || "", (s.tags || []).join(", "), s.pertanyaan, s.opsi?.a, s.opsi?.b, s.opsi?.c, s.opsi?.d, s.kunciJawaban, s.pembahasan || ""].map(csvEscape).join(","));
   downloadFile([csvHeader.join(","), ...rows].join("\n"), `soal-${selectedMapel.value}-kelas-${kelasId}.csv`);
 };
 const parseCsv = (text) => {
@@ -941,7 +1002,7 @@ const parseCsv = (text) => {
   row.push(value); if (row.some(Boolean)) rows.push(row); return rows;
 };
 const metadataImport = data => ({
-  tingkatKesulitan: ["mudah", "sedang", "sulit"].includes(String(data.tingkatKesulitan).toLowerCase()) ? String(data.tingkatKesulitan).toLowerCase() : "sedang",
+  tingkatKesulitan: ["mudah", "sedang", "sulit"].includes(String(data.tingkatKesulitan).toLowerCase()) ? String(data.tingkatKesulitan).toLowerCase() : "",
   status: ["aktif", "draft", "arsip"].includes(String(data.status).toLowerCase()) ? String(data.status).toLowerCase() : "aktif",
   semester: ["ganjil", "genap"].includes(String(data.semester).toLowerCase()) ? String(data.semester).toLowerCase() : "",
   materi: String(data.materi || "").trim(), kurikulum: String(data.kurikulum || "").trim(), tujuanPembelajaran: String(data.tujuanPembelajaran || "").trim(), kodeCapaian: String(data.kodeCapaian || "").trim(), levelKognitif: String(data.levelKognitif || "").trim(), pembahasan: String(data.pembahasan || "").trim(),
@@ -979,7 +1040,7 @@ const downloadTemplateExcel = async () => {
 };
 const exportExcel = async () => {
   const ExcelJS = await excelModule(); const workbook = new ExcelJS.Workbook(); const sheet = workbook.addWorksheet("Bank Soal"); sheet.addRow(csvHeader); sheet.getRow(1).font = { bold: true };
-  daftarSoal.value.forEach(s => sheet.addRow([s.tipe || "pg", s.tingkatKesulitan || "sedang", s.status || "aktif", s.semester || "", s.materi || "", s.kurikulum || "", s.tujuanPembelajaran || "", s.kodeCapaian || "", s.levelKognitif || "", (s.tags || []).join(", "), s.pertanyaan, s.opsi?.a || "", s.opsi?.b || "", s.opsi?.c || "", s.opsi?.d || "", s.kunciJawaban || "", s.pembahasan || ""]));
+  daftarSoal.value.forEach(s => sheet.addRow([s.tipe || "pg", s.tingkatKesulitan || "", s.status || "aktif", s.semester || "", s.materi || "", s.kurikulum || "", s.tujuanPembelajaran || "", s.kodeCapaian || "", s.levelKognitif || "", (s.tags || []).join(", "), s.pertanyaan, s.opsi?.a || "", s.opsi?.b || "", s.opsi?.c || "", s.opsi?.d || "", s.kunciJawaban || "", s.pembahasan || ""]));
   [12, 18, 12, 12, 24, 30, 42, 28, 50, 25, 25, 25, 25, 24].forEach((width, index) => { sheet.getColumn(index + 1).width = width; }); await unduhExcelBuffer(workbook, `soal-${selectedMapel.value}-kelas-${kelasId}.xlsx`);
 };
 const importSpreadsheet = async (event) => {

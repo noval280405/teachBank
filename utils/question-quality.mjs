@@ -5,9 +5,6 @@ export const validateQuestion = question => {
   const text = clean(question.pertanyaan)
   if (!text) issues.push('Pertanyaan belum diisi')
   else if (text.length < 12) issues.push('Pertanyaan terlalu pendek')
-  if (!question.materi) issues.push('Materi belum ditentukan')
-  if (!question.tujuanPembelajaran) issues.push('Tujuan pembelajaran belum ditentukan')
-  if (!question.levelKognitif) issues.push('Level kognitif belum ditentukan')
   if ((question.tipe || 'pg') !== 'essay') {
     const answers = Object.entries(question.opsi || {}).filter(([, value]) => clean(value))
     if (answers.length < 2) issues.push('Minimal dua opsi jawaban diperlukan')
@@ -30,4 +27,3 @@ export const similarity = (left, right) => {
 
 export const findPossibleDuplicate = (question, questions, ignoredId) =>
   questions.find(item => item.id !== ignoredId && similarity(question, item.pertanyaan) >= 0.82)
-

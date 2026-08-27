@@ -1,5 +1,11 @@
 <template>
-  <div class="pointer-events-none fixed right-4 top-20 z-[100] w-[min(24rem,calc(100vw-2rem))] space-y-2" role="region" aria-label="Notifikasi">
+  <div
+    class="pointer-events-none fixed left-1/2 top-4 z-[300] w-[min(24rem,calc(100vw-2rem))] -translate-x-1/2 space-y-2 sm:left-auto sm:right-4 sm:top-20 sm:translate-x-0"
+    role="region"
+    aria-label="Notifikasi"
+    aria-live="polite"
+    aria-atomic="true"
+  >
     <TransitionGroup name="toast">
       <div v-for="item in items" :key="item.id" :class="['pointer-events-auto flex items-start gap-3 rounded-xl border bg-white p-3 text-sm shadow-xl dark:bg-slate-800', colors[item.kind]]" role="status">
         <AppIcon :name="item.kind === 'success' ? 'check' : item.kind === 'error' || item.kind === 'warning' ? 'alert' : 'file'" class="mt-0.5 h-4 w-4 shrink-0" />
