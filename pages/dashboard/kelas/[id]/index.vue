@@ -119,7 +119,11 @@
         <div v-if="showAdvancedFilters" class="mt-3 grid gap-2 border-t border-slate-100 pt-3 dark:border-slate-700 sm:grid-cols-2 lg:grid-cols-5">
         <select v-model="filterKesulitan" class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold outline-none dark:border-slate-700 dark:bg-slate-900/50"><option value="semua">Semua level</option><option value="belum">Belum dinilai</option><option value="mudah">Mudah</option><option value="sedang">Sedang</option><option value="sulit">Sulit</option></select>
         <select v-model="filterKognitif" class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold outline-none dark:border-slate-700 dark:bg-slate-900/50"><option value="semua">Semua kognitif</option><option v-for="level in levelKognitifOptions" :key="level" :value="level">{{ level }}</option></select>
-        <select v-model="filterMateri" class="max-w-40 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold outline-none dark:border-slate-700 dark:bg-slate-900/50"><option value="semua">Semua materi</option><option v-for="materi in daftarMateri" :key="materi" :value="materi">{{ materi }}</option></select>
+        <div class="relative min-w-0">
+          <input v-model.trim="filterMateri" list="daftar-materi-filter" type="search" autocomplete="off" class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-3 pr-8 text-xs font-semibold outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/15 dark:border-slate-700 dark:bg-slate-900/50" placeholder="Semua materi" aria-label="Cari atau pilih materi" />
+          <datalist id="daftar-materi-filter"><option v-for="materi in daftarMateri" :key="materi" :value="materi" /></datalist>
+          <button v-if="filterMateri" type="button" @click="filterMateri = ''" class="absolute right-2 top-1/2 grid h-5 w-5 -translate-y-1/2 place-items-center rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-700 dark:hover:bg-slate-700" aria-label="Hapus filter materi"><AppIcon name="x" class="h-3 w-3" /></button>
+        </div>
         <select v-model="filterKualitas" class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold outline-none dark:border-slate-700 dark:bg-slate-900/50"><option value="semua">Semua kualitas</option><option value="siap">Siap pakai</option><option value="perlu-perbaikan">Perlu perbaikan</option></select>
         <select v-model="filterStatus" class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold outline-none dark:border-slate-700 dark:bg-slate-900/50"><option value="aktif">Soal aktif</option><option value="draft">Draft</option><option value="arsip">Arsip</option><option value="sampah">Sampah</option><option value="semua">Semua status</option></select>
         </div>
@@ -261,8 +265,13 @@
         </div>
       </div>
     </div>
-    <div v-if="totalPages > 1" class="flex items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 text-xs dark:border-slate-700 dark:bg-slate-800"><button @click="currentPage--" :disabled="currentPage === 1" class="rounded-lg border px-3 py-1.5 disabled:opacity-40">Sebelumnya</button><span>Halaman {{ currentPage }} dari {{ totalPages }} · {{ filteredAllSoal.length }} soal</span><button @click="currentPage++" :disabled="currentPage === totalPages" class="rounded-lg border px-3 py-1.5 disabled:opacity-40">Berikutnya</button></div>
-    <div v-if="hasMoreQuestions" class="text-center"><button @click="loadSoal(true)" :disabled="loadingMore" class="ui-button-secondary"><AppIcon :name="loadingMore ? 'loader' : 'plus'" :class="['h-4 w-4', loadingMore && 'animate-spin']" />{{ loadingMore ? 'Memuat…' : 'Muat 100 soal berikutnya' }}</button><p class="mt-2 text-[11px] text-slate-400">Soal dimuat bertahap agar halaman tetap ringan.</p></div>
+    <div v-if="filteredAllSoal.length" class="flex flex-col items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3 text-xs dark:border-slate-700 dark:bg-slate-800 sm:flex-row">
+      <p class="text-slate-500"><b class="text-slate-700 dark:text-slate-200">Halaman {{ currentPage }}</b> · {{ filteredAllSoal.length }} soal sesuai filter sudah dimuat<span v-if="filterStatus === 'aktif' && hasMoreQuestions"> dari {{ stats.total }} soal aktif di {{ selectedMapel }} kelas {{ kelasId }}</span></p>
+      <div class="flex w-full gap-2 sm:w-auto">
+        <button @click="previousPage" :disabled="currentPage === 1 || loadingMore" class="flex-1 rounded-xl border border-slate-200 px-4 py-2 font-semibold transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:hover:bg-slate-700 sm:flex-none">Sebelumnya</button>
+        <button @click="nextPage" :disabled="(!hasMoreQuestions && currentPage >= totalPages) || loadingMore" class="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2 font-semibold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-40 sm:flex-none"><AppIcon v-if="loadingMore" name="loader" class="h-3.5 w-3.5 animate-spin" />{{ loadingMore ? 'Menyiapkan…' : 'Berikutnya' }}</button>
+      </div>
+    </div>
 
     <!-- Dialog Pemulihan Draft -->
     <ClientOnly>
@@ -526,6 +535,7 @@ import {
   query,
   where,
   getDocs,
+  getCountFromServer,
   deleteDoc,
   doc,
   getDoc,
@@ -569,7 +579,7 @@ const searchQuery = ref("");
 const filterTipe = ref("semua");
 const filterKesulitan = ref("semua");
 const filterKognitif = ref("semua");
-const filterMateri = ref("semua");
+const filterMateri = ref("");
 const filterKualitas = ref("semua");
 const filterStatus = ref("aktif");
 const showAdvancedFilters = ref(false);
@@ -628,21 +638,43 @@ const overlayLoading = computed(() => {
   return { show: false, title: "", description: "" };
 });
 
-// Computed Statistik Soal
-const stats = computed(() => {
-  const aktif = daftarSoal.value.filter(s => (s.status || "aktif") === "aktif");
-  const total = aktif.length;
-  const pg = aktif.filter((s) => s.tipe !== "essay").length;
-  const essay = aktif.filter((s) => s.tipe === "essay").length;
-  const belumDipakai = aktif.filter((s) => !s.dipakai).length;
-  return { total, pg, essay, belumDipakai };
-});
+// Statistik hanya untuk soal aktif pada kelas, mapel, dan penugasan yang sedang dibuka.
+const stats = ref({ total: 0, pg: 0, essay: 0, belumDipakai: 0 });
+const loadStats = async () => {
+  if (!user.value || !selectedMapel.value) return;
+  const baseConstraints = [
+    where("userId", "==", user.value.uid),
+    where("kelas", "==", Number(kelasId)),
+    where("mapel", "==", selectedMapel.value),
+    ...(assignmentId.value !== "legacy" ? [where("assignmentId", "==", assignmentId.value)] : []),
+    where("status", "==", "aktif"),
+  ];
+  try {
+    const [totalSnapshot, essaySnapshot, usedSnapshot] = await Promise.all([
+      getCountFromServer(query(collection(db, "soal"), ...baseConstraints)),
+      getCountFromServer(query(collection(db, "soal"), ...baseConstraints, where("tipe", "==", "essay"))),
+      getCountFromServer(query(collection(db, "soal"), ...baseConstraints, where("dipakai", "==", true))),
+    ]);
+    const total = totalSnapshot.data().count;
+    const essay = essaySnapshot.data().count;
+    const used = usedSnapshot.data().count;
+    stats.value = { total, essay, pg: total - essay, belumDipakai: total - used };
+  } catch (error) {
+    console.warn("Statistik seluruh soal tidak dapat dimuat:", error);
+  }
+};
 
 // Computed Filter Soal (Search + Tipe)
 const qualityIssues = item => validateQuestion(item);
 const formQualityIssues = computed(() => validateQuestion({ ...formSoal.value, tags: formSoal.value.tagInput?.split(",") }));
 const daftarMateri = computed(() => [...new Set(daftarSoal.value.map(item => item.materi).filter(Boolean))].sort((a, b) => a.localeCompare(b, "id")));
-const activeFilterCount = computed(() => [filterKesulitan.value, filterKognitif.value, filterMateri.value, filterKualitas.value, filterStatus.value].filter((value, index) => value !== (index === 4 ? "aktif" : "semua")).length);
+const activeFilterCount = computed(() => [
+  filterKesulitan.value !== "semua",
+  filterKognitif.value !== "semua",
+  Boolean(filterMateri.value),
+  filterKualitas.value !== "semua",
+  filterStatus.value !== "aktif",
+].filter(Boolean).length);
 const filteredAllSoal = computed(() => {
   return daftarSoal.value.filter((item) => {
     if (filterTipe.value === "pg" && item.tipe === "essay") return false;
@@ -650,7 +682,7 @@ const filteredAllSoal = computed(() => {
     if (filterKesulitan.value === "belum" && item.tingkatKesulitan) return false;
     if (!["semua", "belum"].includes(filterKesulitan.value) && item.tingkatKesulitan !== filterKesulitan.value) return false;
     if (filterKognitif.value !== "semua" && item.levelKognitif !== filterKognitif.value) return false;
-    if (filterMateri.value !== "semua" && item.materi !== filterMateri.value) return false;
+    if (filterMateri.value && !String(item.materi || "").toLowerCase().includes(filterMateri.value.toLowerCase())) return false;
     if (filterKualitas.value === "siap" && qualityIssues(item).length) return false;
     if (filterKualitas.value === "perlu-perbaikan" && !qualityIssues(item).length) return false;
     if (filterStatus.value !== "semua" && (item.status || "aktif") !== filterStatus.value) return false;
@@ -664,6 +696,19 @@ const filteredAllSoal = computed(() => {
 });
 const totalPages = computed(() => Math.max(1, Math.ceil(filteredAllSoal.value.length / pageSize)));
 const filteredSoal = computed(() => filteredAllSoal.value.slice((currentPage.value - 1) * pageSize, currentPage.value * pageSize));
+const previousPage = () => { if (currentPage.value > 1) currentPage.value--; };
+const nextPage = async () => {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++;
+    return;
+  }
+  if (!hasMoreQuestions.value || loadingMore.value) return;
+  const previousTotalPages = totalPages.value;
+  do {
+    await loadSoal(true);
+  } while (hasMoreQuestions.value && totalPages.value === previousTotalPages);
+  if (totalPages.value > previousTotalPages) currentPage.value++;
+};
 
 const updateUrlQuery = () => {
   router.replace({
@@ -703,11 +748,13 @@ const loadSoal = async (append = false) => {
   if (append) loadingMore.value = true;
   else { loadingData.value = true; lastQuestionDoc.value = null; }
   try {
+    if (!append) await loadStats();
     const constraints = [
       collection(db, "soal"),
       where("userId", "==", user.value.uid),
       where("kelas", "==", Number(kelasId)),
       where("mapel", "==", selectedMapel.value),
+      ...(assignmentId.value !== "legacy" ? [where("assignmentId", "==", assignmentId.value)] : []),
       orderBy(documentId()),
       ...(append && lastQuestionDoc.value ? [startAfter(lastQuestionDoc.value)] : []),
       limit(100),
@@ -721,7 +768,12 @@ const loadSoal = async (append = false) => {
     const sesuaiPenugasan = assignmentId.value === "legacy"
       ? semuaSoal.filter((soal) => !soal.assignmentId || soal.assignmentId === "legacy")
       : semuaSoal.filter((soal) => soal.assignmentId === assignmentId.value);
-    daftarSoal.value = append ? [...daftarSoal.value, ...sesuaiPenugasan] : sesuaiPenugasan;
+    const timestampValue = (value) => value?.toMillis?.() || (value?.seconds ? value.seconds * 1000 : new Date(value || 0).getTime()) || 0;
+    const hasilTerurut = [...sesuaiPenugasan].sort((a, b) => timestampValue(b.createdAt || b.updatedAt) - timestampValue(a.createdAt || a.updatedAt));
+    const hasilGabungan = append
+      ? [...daftarSoal.value, ...hasilTerurut.filter(item => !daftarSoal.value.some(existing => existing.id === item.id))]
+      : hasilTerurut;
+    daftarSoal.value = hasilGabungan.sort((a, b) => timestampValue(b.createdAt || b.updatedAt) - timestampValue(a.createdAt || a.updatedAt));
     lastQuestionDoc.value = snapshot.docs.at(-1) || null;
     hasMoreQuestions.value = snapshot.size === 100;
   } catch (e) {
@@ -893,19 +945,29 @@ const simpanSoal = async () => {
       updatedAt: new Date(),
     };
 
+    let savedQuestion;
     if (isEditMode.value && editSoalId.value) {
       await updateDoc(doc(db, "soal", editSoalId.value), dataPayload);
+      const existingQuestion = daftarSoal.value.find((item) => item.id === editSoalId.value);
+      savedQuestion = { ...existingQuestion, ...dataPayload, id: editSoalId.value };
+      daftarSoal.value = daftarSoal.value.map((item) => item.id === editSoalId.value ? savedQuestion : item);
     } else {
       dataPayload.dipakai = false;
       dataPayload.jumlahDicetak = 0;
       dataPayload.createdAt = new Date();
-      await addDoc(collection(db, "soal"), dataPayload);
+      const savedDocument = await addDoc(collection(db, "soal"), dataPayload);
+      savedQuestion = { id: savedDocument.id, ...dataPayload };
+      daftarSoal.value = [savedQuestion, ...daftarSoal.value.filter((item) => item.id !== savedDocument.id)];
     }
 
     showModalForm.value = false;
+    currentPage.value = 1;
+    searchQuery.value = "";
+    filterStatus.value = savedQuestion.status || "aktif";
     if (!isEditMode.value) await deleteDoc(doc(db, "draftGuru", questionDraftDocId.value)).catch(() => {});
     await catatAktivitas(isEditMode.value ? "soal_diedit" : "soal_dibuat", { soalId: editSoalId.value, mapel: selectedMapel.value, kelas: Number(kelasId) });
-    await loadSoal();
+    await loadStats();
+    success(isEditMode.value ? "Perubahan soal berhasil disimpan." : "Soal baru berhasil ditambahkan dan ditampilkan paling atas.");
   } catch (e) {
     console.error("Gagal menyimpan soal:", e);
     toastError("Terjadi kesalahan saat menyimpan soal.");
