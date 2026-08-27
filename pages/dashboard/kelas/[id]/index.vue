@@ -355,6 +355,15 @@
             ></textarea>
           </div>
 
+          <div v-if="formSoal.tipe === 'essay'" class="rounded-2xl border border-brand-200 bg-brand-50/60 p-4 dark:border-brand-800 dark:bg-brand-950/20">
+            <div class="mb-2 flex items-center justify-between gap-3">
+              <label for="pedoman-jawaban-essay" class="text-sm font-bold text-slate-800 dark:text-slate-100">Pedoman jawaban <span class="text-red-500">*</span></label>
+              <span class="rounded-full bg-brand-100 px-2 py-1 text-[10px] font-bold text-brand-700 dark:bg-brand-900/40 dark:text-brand-300">Wajib untuk essay</span>
+            </div>
+            <textarea id="pedoman-jawaban-essay" v-model="formSoal.pembahasan" rows="3" class="ui-input" placeholder="Tuliskan jawaban benar atau poin-poin yang harus disebutkan siswa…" required />
+            <p class="mt-2 text-[11px] leading-relaxed text-slate-500">Pedoman ini menjadi patokan saat memeriksa jawaban siswa dan tidak ikut tercetak sebagai pertanyaan.</p>
+          </div>
+
           <!-- UPLOAD FILE GAMBAR UNTUK KONVERSI KE BASE64 (TANPA FIREBASE STORAGE) -->
           <div
             class="space-y-2 p-3 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-200 dark:border-slate-700"
@@ -436,7 +445,7 @@
 
           <div v-if="formQualityIssues.length" class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/20 dark:text-amber-300"><b>Periksa sebelum menyimpan:</b><ul class="mt-1 list-disc pl-4"><li v-for="issue in formQualityIssues" :key="issue">{{ issue }}</li></ul></div>
 
-          <details class="rounded-xl border border-slate-200 dark:border-slate-700"><summary class="cursor-pointer list-none p-4"><div class="flex items-center justify-between gap-3"><div><p class="text-sm font-bold">2. Materi & pembahasan <span class="font-normal text-slate-400">(opsional)</span></p><p class="mt-1 text-[11px] text-slate-500">Isi bila ingin mengelompokkan soal atau memberikan pembahasan.</p></div><AppIcon name="plus" class="h-4 w-4 text-slate-400" /></div></summary><div class="space-y-3 border-t border-slate-100 p-4 dark:border-slate-700"><div><label class="mb-1 block text-xs font-medium">Tingkat kesulitan awal</label><div class="grid grid-cols-2 gap-2 sm:grid-cols-4"><label v-for="level in difficultyOptions" :key="level.value" :class="['cursor-pointer rounded-xl border px-2 py-2 text-center text-xs font-bold transition', formSoal.tingkatKesulitan === level.value ? difficultyClass(level.value) : 'border-slate-200 text-slate-500 dark:border-slate-700']"><input v-model="formSoal.tingkatKesulitan" type="radio" :value="level.value" class="hidden" />{{ level.label }}</label></div><p class="mt-1.5 text-[10px] text-slate-400">Nantinya dapat diperbarui berdasarkan persentase jawaban benar siswa.</p></div><div class="grid gap-3 sm:grid-cols-2"><div><label class="mb-1 block text-xs font-medium">Bab / materi</label><input v-model.trim="formSoal.materi" class="ui-input" placeholder="Contoh: Pecahan" /></div><div><label class="mb-1 block text-xs font-medium">Semester</label><select v-model="formSoal.semester" class="ui-input"><option value="">Tidak ditentukan</option><option value="ganjil">Ganjil</option><option value="genap">Genap</option></select></div></div><div><label class="mb-1 block text-xs font-medium">Pembahasan / pedoman jawaban</label><textarea v-model="formSoal.pembahasan" rows="3" class="ui-input" placeholder="Langkah penyelesaian atau rubrik penilaian…" /></div><div><label class="mb-1 block text-xs font-medium">Status</label><select v-model="formSoal.status" class="ui-input"><option value="aktif">Siap digunakan</option><option value="draft">Simpan sebagai draft</option><option value="arsip">Arsip</option></select></div></div></details>
+          <details class="rounded-xl border border-slate-200 dark:border-slate-700"><summary class="cursor-pointer list-none p-4"><div class="flex items-center justify-between gap-3"><div><p class="text-sm font-bold">2. Materi & pembahasan <span class="font-normal text-slate-400">(opsional)</span></p><p class="mt-1 text-[11px] text-slate-500">Isi bila ingin mengelompokkan soal atau memberikan pembahasan.</p></div><AppIcon name="plus" class="h-4 w-4 text-slate-400" /></div></summary><div class="space-y-3 border-t border-slate-100 p-4 dark:border-slate-700"><div><label class="mb-1 block text-xs font-medium">Tingkat kesulitan awal</label><div class="grid grid-cols-2 gap-2 sm:grid-cols-4"><label v-for="level in difficultyOptions" :key="level.value" :class="['cursor-pointer rounded-xl border px-2 py-2 text-center text-xs font-bold transition', formSoal.tingkatKesulitan === level.value ? difficultyClass(level.value) : 'border-slate-200 text-slate-500 dark:border-slate-700']"><input v-model="formSoal.tingkatKesulitan" type="radio" :value="level.value" class="hidden" />{{ level.label }}</label></div><p class="mt-1.5 text-[10px] text-slate-400">Nantinya dapat diperbarui berdasarkan persentase jawaban benar siswa.</p></div><div class="grid gap-3 sm:grid-cols-2"><div><label class="mb-1 block text-xs font-medium">Bab / materi</label><input v-model.trim="formSoal.materi" class="ui-input" placeholder="Contoh: Pecahan" /></div><div><label class="mb-1 block text-xs font-medium">Semester</label><select v-model="formSoal.semester" class="ui-input"><option value="">Tidak ditentukan</option><option value="ganjil">Ganjil</option><option value="genap">Genap</option></select></div></div><div v-if="formSoal.tipe === 'pg'"><label class="mb-1 block text-xs font-medium">Pembahasan <span class="font-normal text-slate-400">(opsional)</span></label><textarea v-model="formSoal.pembahasan" rows="3" class="ui-input" placeholder="Jelaskan alasan jawaban yang benar…" /></div><div><label class="mb-1 block text-xs font-medium">Status</label><select v-model="formSoal.status" class="ui-input"><option value="aktif">Siap digunakan</option><option value="draft">Simpan sebagai draft</option><option value="arsip">Arsip</option></select></div></div></details>
 
           <details class="rounded-xl border border-slate-200 dark:border-slate-700"><summary class="cursor-pointer list-none p-4"><div class="flex items-center justify-between gap-3"><div><p class="text-sm font-bold">3. Kisi-kisi pembelajaran <span class="font-normal text-slate-400">(lanjutan)</span></p><p class="mt-1 text-[11px] text-slate-500">Untuk kebutuhan administrasi, kisi-kisi, atau pemetaan kurikulum.</p></div><AppIcon name="plus" class="h-4 w-4 text-slate-400" /></div></summary><div class="space-y-3 border-t border-slate-100 p-4 dark:border-slate-700"><div class="grid gap-3 sm:grid-cols-2"><div><label class="mb-1 block text-xs font-medium">Kurikulum / fase</label><input v-model.trim="formSoal.kurikulum" class="ui-input" placeholder="Contoh: Fase B" /></div><div><label class="mb-1 block text-xs font-medium">Level kognitif</label><select v-model="formSoal.levelKognitif" class="ui-input"><option value="">Tidak ditentukan</option><option v-for="level in levelKognitifOptions" :key="level" :value="level">{{ level }}</option></select></div></div><div><label class="mb-1 block text-xs font-medium">Kode CP/TP</label><input v-model.trim="formSoal.kodeCapaian" class="ui-input" placeholder="Contoh: B.2.1" /></div><div><label class="mb-1 block text-xs font-medium">Tujuan pembelajaran</label><input v-model.trim="formSoal.tujuanPembelajaran" class="ui-input" placeholder="Siswa mampu…" /></div><div><label class="mb-1 block text-xs font-medium">Tag</label><input v-model="formSoal.tagInput" class="ui-input" placeholder="Pisahkan dengan koma, misalnya: pecahan, numerasi" /></div></div></details>
 
@@ -905,6 +914,24 @@ const simpanSoal = async () => {
     (!formSoal.value.opsi.a || !formSoal.value.opsi.b)
   ) {
     warning("Harap isi minimal pilihan A dan B untuk soal pilihan ganda.");
+    return;
+  }
+  if (formSoal.value.tipe === "pg") {
+    const filledOptions = Object.entries(formSoal.value.opsi)
+      .filter(([, value]) => String(value || "").trim())
+      .map(([key, value]) => [key, String(value).trim().toLowerCase().replace(/\s+/g, " ")]);
+    const duplicateOptions = filledOptions.find(([key, value], index) =>
+      filledOptions.some(([otherKey, otherValue], otherIndex) => otherIndex < index && otherKey !== key && otherValue === value)
+    );
+    if (duplicateOptions) {
+      const [duplicateKey, duplicateValue] = duplicateOptions;
+      const firstKey = filledOptions.find(([key, value]) => key !== duplicateKey && value === duplicateValue)?.[0];
+      warning(`Pilihan ${firstKey?.toUpperCase()} dan ${duplicateKey.toUpperCase()} tidak boleh memiliki jawaban yang sama.`);
+      return;
+    }
+  }
+  if (formSoal.value.tipe === "essay" && !formSoal.value.pembahasan.trim()) {
+    warning("Pedoman jawaban wajib diisi untuk soal essay.");
     return;
   }
 

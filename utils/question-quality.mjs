@@ -26,4 +26,8 @@ export const similarity = (left, right) => {
 }
 
 export const findPossibleDuplicate = (question, questions, ignoredId) =>
-  questions.find(item => item.id !== ignoredId && similarity(question, item.pertanyaan) >= 0.82)
+  questions.find(item =>
+    item.id !== ignoredId &&
+    (item.status || 'aktif') !== 'sampah' &&
+    similarity(question, item.pertanyaan) >= 0.82
+  )
