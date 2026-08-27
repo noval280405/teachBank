@@ -2,6 +2,8 @@
   <div class="mx-auto max-w-6xl space-y-6 pb-20 text-slate-800 dark:text-slate-100">
     <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-600 via-brand-700 to-indigo-800 p-6 text-white shadow-xl sm:p-8"><div class="absolute -right-20 -top-24 h-72 w-72 rounded-full bg-white/10"></div><div class="relative flex flex-col justify-between gap-6 sm:flex-row sm:items-end"><div class="flex items-start gap-4"><span class="hidden h-12 w-12 place-items-center rounded-2xl bg-white/15 sm:grid"><AppIcon name="graduation" class="h-6 w-6" /></span><div><p class="text-xs font-bold uppercase tracking-[.2em] text-brand-100">Ruang Mengajar</p><h1 class="mt-1 text-2xl font-bold sm:text-3xl">Kelas & Sekolah Anda</h1><p class="mt-2 max-w-xl text-sm text-brand-100">Cari kelas berdasarkan jenjang, sekolah, atau mata pelajaran.</p></div></div><NuxtLink to="/pengaturan" class="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-brand-700 shadow"><AppIcon name="settings" class="h-4 w-4" />Atur Penugasan</NuxtLink></div></div>
 
+    <section v-if="!loading" class="ui-card ui-card-body"><div class="mb-4 flex items-center justify-between"><div><h2 class="ui-section-title">Mulai dari sini</h2><p class="ui-section-help">Ikuti alur ini untuk membuat ujian pertama Anda.</p></div><button @click="showGettingStarted = !showGettingStarted" class="text-xs font-semibold text-brand-600">{{ showGettingStarted ? 'Sembunyikan' : 'Tampilkan' }}</button></div><div v-if="showGettingStarted" class="grid gap-2 sm:grid-cols-2 lg:grid-cols-4"><NuxtLink v-for="item in gettingStarted" :key="item.title" :to="item.to" class="group rounded-xl border border-slate-200 p-3 transition hover:border-brand-500 hover:bg-brand-50 dark:border-slate-700 dark:hover:bg-brand-950/20"><div class="flex items-center gap-2"><span :class="['grid h-7 w-7 place-items-center rounded-full text-xs font-bold', item.done ? 'bg-emerald-100 text-emerald-700' : 'bg-brand-600 text-white']">{{ item.done ? '✓' : item.step }}</span><b class="text-sm">{{ item.title }}</b></div><p class="mt-2 text-[11px] leading-relaxed text-slate-500">{{ item.help }}</p></NuxtLink></div></section>
+
     <div v-if="loading" class="rounded-2xl border bg-white py-16 text-center text-slate-500 dark:border-slate-700 dark:bg-slate-800"><AppIcon name="loader" class="mx-auto mb-3 h-6 w-6 animate-spin text-brand-500" />Memuat data kelas...</div>
     <div v-else-if="!kartuKelas.length" class="rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center dark:border-slate-700 dark:bg-slate-800"><span class="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-brand-50 text-brand-600"><AppIcon name="school" class="h-6 w-6" /></span><h2 class="font-bold">Penugasan belum diatur</h2><p class="mb-5 mt-1 text-sm text-slate-500">Tambahkan sekolah, jenjang, kelas, dan mata pelajaran Anda.</p><NuxtLink to="/pengaturan" class="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white"><AppIcon name="plus" class="h-4 w-4" />Tambah Penugasan</NuxtLink></div>
 
@@ -32,10 +34,18 @@ const searchQuery = ref('')
 const filterJenjang = ref('semua')
 const filterMapel = ref('semua')
 const pekerjaanTerakhir = ref([])
+const showGettingStarted = ref(true)
 const urutanJenjang = ['SD', 'SMP', 'SMA/SMK']
 const kartuKelas = computed(() => penugasan.value
   .flatMap(tugas => tugas.kelasAjar.map(kelas => ({ assignmentId: tugas.id, jenjang: tugas.jenjang === 'SMK' || tugas.jenjang === 'SMA' ? 'SMA/SMK' : tugas.jenjang, namaSekolah: tugas.namaSekolah, kelas, mapelAjar: tugas.mapelPerKelas?.[kelas] || tugas.mapelAjar || [] })))
   .sort((a, b) => urutanJenjang.indexOf(a.jenjang) - urutanJenjang.indexOf(b.jenjang) || a.namaSekolah.localeCompare(b.namaSekolah, 'id') || Number(a.kelas) - Number(b.kelas)))
+const firstClassUrl = computed(() => kartuKelas.value.length ? kelasUrl(kartuKelas.value[0]) : '/pengaturan')
+const gettingStarted = computed(() => [
+  { step: 1, title: 'Atur sekolah', help: 'Tambahkan sekolah, kelas, dan mata pelajaran.', to: '/pengaturan', done: kartuKelas.value.length > 0 },
+  { step: 2, title: 'Tambah soal', help: 'Buat soal sendiri atau impor dari Excel.', to: firstClassUrl.value, done: pekerjaanTerakhir.value.some(item => item.formSoal) },
+  { step: 3, title: 'Susun ujian', help: 'Pilih soal dan atur identitas ujian.', to: firstClassUrl.value, done: pekerjaanTerakhir.value.some(item => item.jenis === 'Riwayat ujian') },
+  { step: 4, title: 'Cetak & analisis', help: 'Cetak lembar siswa lalu analisis hasil PG.', to: pekerjaanTerakhir.value.some(item => item.jenis === 'Riwayat ujian') ? '/analisis' : firstClassUrl.value, done: false },
+])
 const daftarMapel = computed(() => [...new Set(penugasan.value.flatMap(t => t.mapelAjar))].sort())
 const filteredKartu = computed(() => { const q = searchQuery.value.trim().toLowerCase(); return kartuKelas.value.filter(item => (filterJenjang.value === 'semua' || item.jenjang === filterJenjang.value) && (filterMapel.value === 'semua' || item.mapelAjar.includes(filterMapel.value)) && (!q || `${item.jenjang} kelas ${item.kelas} ${item.namaSekolah} ${item.mapelAjar.join(' ')}`.toLowerCase().includes(q))) })
 const adaFilter = computed(() => searchQuery.value || filterJenjang.value !== 'semua' || filterMapel.value !== 'semua')
