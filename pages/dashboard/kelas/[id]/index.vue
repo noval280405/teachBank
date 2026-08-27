@@ -895,7 +895,7 @@ const duplikatSoal = (soal) => {
     opsiGambar: soal.opsiGambar ? { ...soal.opsiGambar } : { a: "", b: "", c: "", d: "" },
     kunciJawaban: soal.kunciJawaban || "a",
     tingkatKesulitan: soal.tingkatKesulitan || "",
-    status: "draft", semester: soal.semester || "", materi: soal.materi || "", kurikulum: soal.kurikulum || "", tujuanPembelajaran: soal.tujuanPembelajaran || "", kodeCapaian: soal.kodeCapaian || "", levelKognitif: soal.levelKognitif || "", pembahasan: soal.pembahasan || "", tagInput: (soal.tags || []).join(", "),
+    status: "aktif", semester: soal.semester || "", materi: soal.materi || "", kurikulum: soal.kurikulum || "", tujuanPembelajaran: soal.tujuanPembelajaran || "", kodeCapaian: soal.kodeCapaian || "", levelKognitif: soal.levelKognitif || "", pembahasan: soal.pembahasan || "", tagInput: (soal.tags || []).join(", "),
   };
   if (fileInputRef.value) fileInputRef.value.value = "";
   showModalForm.value = true;
