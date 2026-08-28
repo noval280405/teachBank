@@ -10,10 +10,48 @@ service cloud.firestore {
       allow read, create, update, delete: if signedIn() && request.auth.uid == uid;
     }
 
+    match /teachers/{uid} {
+      allow read, delete: if signedIn() && request.auth.uid == uid;
+      allow create, update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.userId == uid;
+    }
+
+    match /schools/{schoolId} {
+      allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid;
+      allow read, delete: if signedIn() && resource.data.ownerId == request.auth.uid;
+      allow update: if signedIn() && resource.data.ownerId == request.auth.uid
+        && request.resource.data.ownerId == resource.data.ownerId;
+    }
+
+    match /teachingAssignments/{assignmentId} {
+      allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid;
+      allow read, delete: if signedIn() && resource.data.ownerId == request.auth.uid;
+      allow update: if signedIn() && resource.data.ownerId == request.auth.uid
+        && request.resource.data.ownerId == resource.data.ownerId;
+    }
+
     match /soal/{id} {
       allow create: if ownsIncoming();
       allow read, delete: if ownsExisting();
       allow update: if ownsExisting() && ownsIncoming() && ownershipUnchanged();
+    }
+
+    match /questionBanks/{bankId} {
+      allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid;
+      allow read, delete: if signedIn() && resource.data.ownerId == request.auth.uid;
+      allow update: if signedIn() && resource.data.ownerId == request.auth.uid
+        && request.resource.data.ownerId == resource.data.ownerId;
+
+      match /questions/{questionId} {
+        allow create: if signedIn()
+          && get(/databases/$(database)/documents/questionBanks/$(bankId)).data.ownerId == request.auth.uid
+          && request.resource.data.createdBy == request.auth.uid;
+        allow read, delete: if signedIn()
+          && resource.data.createdBy == request.auth.uid;
+        allow update: if signedIn()
+          && resource.data.createdBy == request.auth.uid
+          && request.resource.data.createdBy == resource.data.createdBy;
+      }
     }
 
     match /{collectionName}/{id} {

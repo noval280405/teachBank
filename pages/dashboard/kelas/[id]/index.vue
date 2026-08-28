@@ -113,7 +113,7 @@
           </button>
         </div>
         <button @click="showAdvancedFilters = !showAdvancedFilters" class="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:text-slate-300"><AppIcon name="settings" class="h-4 w-4" />{{ showAdvancedFilters ? 'Tutup filter' : 'Filter lanjutan' }}<span v-if="activeFilterCount" class="rounded-full bg-brand-600 px-1.5 py-0.5 text-[10px] text-white">{{ activeFilterCount }}</span></button>
-        <details class="relative shrink-0"><summary class="flex min-h-10 cursor-pointer list-none items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:text-slate-300"><AppIcon name="file" class="h-4 w-4" />Impor & ekspor</summary><div class="absolute right-0 top-12 z-40 grid min-w-48 gap-1 rounded-xl border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-700 dark:bg-slate-800"><button @click="downloadTemplateExcel" class="rounded-lg px-3 py-2 text-left text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-700">Unduh template</button><button @click="$refs.csvInput.click()" :disabled="importingSpreadsheet" class="rounded-lg px-3 py-2 text-left text-xs font-semibold text-brand-600 hover:bg-brand-50">Import soal</button><button @click="exportExcel" :disabled="!daftarSoal.length" class="rounded-lg px-3 py-2 text-left text-xs font-semibold text-emerald-600 hover:bg-emerald-50">Export Excel</button><button @click="showModalHapusSemua = true" :disabled="!jumlahSoalBisaDihapus || deletingAll" class="rounded-lg px-3 py-2 text-left text-xs font-semibold text-red-600 hover:bg-red-50">Pindahkan semua ke sampah</button></div></details>
+        <details class="relative shrink-0"><summary class="flex min-h-10 cursor-pointer list-none items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:text-slate-300"><AppIcon name="file" class="h-4 w-4" />Impor & ekspor</summary><div class="absolute right-0 top-12 z-40 grid min-w-48 gap-1 rounded-xl border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-700 dark:bg-slate-800"><button @click="downloadTemplateExcel" class="rounded-lg px-3 py-2 text-left text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-700">Unduh template</button><button @click="$refs.csvInput.click()" :disabled="importingSpreadsheet" class="rounded-lg px-3 py-2 text-left text-xs font-semibold text-brand-600 hover:bg-brand-50">Import soal</button><button @click="exportExcel" :disabled="!daftarSoal.length" class="rounded-lg px-3 py-2 text-left text-xs font-semibold text-emerald-600 hover:bg-emerald-50">Export Excel</button><button @click="bukaKonfirmasiHapusSemua" :disabled="!jumlahSoalBisaDihapus || deletingAll" class="rounded-lg px-3 py-2 text-left text-xs font-semibold text-red-600 hover:bg-red-50">Hapus semua soal</button></div></details>
         <input ref="csvInput" type="file" accept=".xlsx,.xls,.csv,text/csv" class="hidden" @change="importSpreadsheet" />
         </div>
         <div v-if="showAdvancedFilters" class="mt-3 grid gap-2 border-t border-slate-100 pt-3 dark:border-slate-700 sm:grid-cols-2 lg:grid-cols-5">
@@ -125,7 +125,7 @@
           <button v-if="filterMateri" type="button" @click="filterMateri = ''" class="absolute right-2 top-1/2 grid h-5 w-5 -translate-y-1/2 place-items-center rounded-full text-slate-400 hover:bg-slate-200 hover:text-slate-700 dark:hover:bg-slate-700" aria-label="Hapus filter materi"><AppIcon name="x" class="h-3 w-3" /></button>
         </div>
         <select v-model="filterKualitas" class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold outline-none dark:border-slate-700 dark:bg-slate-900/50"><option value="semua">Semua kualitas</option><option value="siap">Siap pakai</option><option value="perlu-perbaikan">Perlu perbaikan</option></select>
-        <select v-model="filterStatus" class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold outline-none dark:border-slate-700 dark:bg-slate-900/50"><option value="aktif">Soal aktif</option><option value="draft">Draft</option><option value="arsip">Arsip</option><option value="sampah">Sampah</option><option value="semua">Semua status</option></select>
+        <select v-model="filterStatus" class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold outline-none dark:border-slate-700 dark:bg-slate-900/50"><option value="aktif">Soal aktif</option><option value="draft">Draft</option><option value="arsip">Arsip</option><option value="semua">Semua status</option></select>
         </div>
       </div>
     </ClientOnly>
@@ -204,14 +204,13 @@
           </div>
 
           <div class="flex items-center gap-1 rounded-xl bg-slate-50 p-1 dark:bg-slate-900/40">
-            <button v-if="(item.status || 'aktif') !== 'sampah'"
+            <button
               @click="duplikatSoal(item)"
               class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-white hover:text-slate-700 hover:shadow-sm dark:hover:bg-slate-700"
               title="Gandakan Soal Ini"
             >
               <AppIcon name="copy" class="h-3.5 w-3.5" /> <span class="hidden sm:inline">Duplikat</span>
             </button>
-            <button v-else @click="pulihkanSoal(item)" class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-emerald-600 hover:bg-white dark:hover:bg-slate-700"><AppIcon name="refresh" class="h-3.5 w-3.5" /> Pulihkan</button>
             <button
               @click="bukaModalEdit(item)"
               class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-brand-600 transition hover:bg-white hover:shadow-sm dark:hover:bg-slate-700"
@@ -494,20 +493,21 @@
             Hapus Soal Ini?
           </h3>
           <p class="text-xs text-slate-500 leading-relaxed">
-            Soal <b>"{{ targetHapusSoal?.pertanyaan }}"</b> akan dipindahkan ke
-            sampah dan masih dapat dipulihkan selama 30 hari.
+            Soal <b>"{{ targetHapusSoal?.pertanyaan }}"</b> akan dihapus permanen dari database dan tidak dapat dipulihkan.
           </p>
+          <div class="text-left"><label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-200">Ketik ulang pertanyaan untuk mengonfirmasi</label><textarea v-model="deleteQuestionConfirmation" rows="3" class="ui-input text-xs" :placeholder="targetHapusSoal?.pertanyaan" autocomplete="off" /><p v-if="deleteQuestionConfirmation && !singleDeleteConfirmed" class="mt-1 text-[10px] text-red-500">Teks pertanyaan belum sama.</p></div>
 
           <div class="flex justify-center gap-2 pt-2">
             <button
-              @click="showModalHapus = false"
+              @click="tutupKonfirmasiHapus"
               class="flex-1 px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 rounded-xl hover:bg-slate-200"
             >
               Batal
             </button>
             <button
               @click="eksekusiHapusSoal"
-              class="flex-1 px-4 py-2 text-xs font-semibold text-white bg-red-600 rounded-xl hover:bg-red-700 shadow"
+              :disabled="!singleDeleteConfirmed"
+              class="flex-1 px-4 py-2 text-xs font-semibold text-white bg-red-600 rounded-xl hover:bg-red-700 shadow disabled:cursor-not-allowed disabled:opacity-40"
             >
               Ya, Hapus
             </button>
@@ -524,10 +524,15 @@
         <div class="w-full max-w-sm space-y-4 rounded-2xl bg-white p-6 text-center shadow-xl dark:bg-slate-800">
           <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-900/30"><AppIcon name="alert" class="h-6 w-6" /></div>
           <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100">Hapus Semua Soal?</h3>
-          <p class="text-xs leading-relaxed text-slate-500"><b>{{ jumlahSoalBisaDihapus }} soal {{ selectedMapel }}</b> di kelas {{ kelasId }} akan dipindahkan ke sampah dan masih dapat dipulihkan selama {{ retentionDays }} hari.</p>
+          <p class="text-xs leading-relaxed text-slate-500">Seluruh soal <b>{{ selectedMapel }}</b> di kelas {{ kelasId }}, termasuk draft dan arsip, akan dihapus permanen dari database. Tindakan ini tidak dapat dibatalkan.</p>
+          <div class="space-y-3 text-left">
+            <div><label class="ui-label">Pilih kelas</label><select v-model="deleteAllClassConfirmation" class="ui-input"><option value="">Pilih kelas yang akan dihapus…</option><option :value="String(kelasId)">Kelas {{ kelasId }}</option></select></div>
+            <div><label class="ui-label">Pilih mata pelajaran</label><select v-model="deleteAllSubjectConfirmation" class="ui-input"><option value="">Pilih mata pelajaran…</option><option :value="selectedMapel">{{ selectedMapel }}</option></select></div>
+            <div><label class="ui-label">Kata sandi akun</label><input v-model="deleteAllPassword" type="password" class="ui-input" placeholder="Masukkan kata sandi login" autocomplete="current-password" /></div>
+          </div>
           <div class="flex justify-center gap-2 pt-2">
-            <button @click="showModalHapusSemua = false" :disabled="deletingAll" class="flex-1 rounded-xl bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200 disabled:opacity-50 dark:bg-slate-700 dark:text-slate-300">Batal</button>
-            <button @click="hapusSemuaSoal" :disabled="deletingAll" class="flex-1 rounded-xl bg-red-600 px-4 py-2 text-xs font-semibold text-white shadow hover:bg-red-700 disabled:opacity-50"><span v-if="deletingAll" class="inline-flex items-center gap-2"><AppIcon name="loader" class="h-3.5 w-3.5 animate-spin" /> Menghapus…</span><span v-else>Ya, Hapus Semua</span></button>
+            <button @click="tutupKonfirmasiHapusSemua" :disabled="deletingAll" class="flex-1 rounded-xl bg-slate-100 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200 disabled:opacity-50 dark:bg-slate-700 dark:text-slate-300">Batal</button>
+            <button @click="hapusSemuaSoal" :disabled="!deleteAllConfirmed || deletingAll" class="flex-1 rounded-xl bg-red-600 px-4 py-2 text-xs font-semibold text-white shadow hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-40"><span v-if="deletingAll" class="inline-flex items-center gap-2"><AppIcon name="loader" class="h-3.5 w-3.5 animate-spin" /> Menghapus…</span><span v-else>Hapus Permanen</span></button>
           </div>
         </div>
       </div>
@@ -571,9 +576,11 @@ const assignmentId = computed(() => String(route.query.assignment || "legacy"));
 const jenjang = computed(() => String(route.query.jenjang || "SD"));
 const schoolName = computed(() => String(route.query.sekolah || "Sekolah Saya"));
 const { db, storage } = useFirebase();
-const { user, initAuth } = useAuth();
+const { user, initAuth, autentikasiUlang } = useAuth();
 const { catatAktivitas } = useAuditLog();
 const { success, error: toastError, warning } = useToast();
+const { bankIdFor, questionsRefFor, questionRefFor, ensureBank, migrateLegacyQuestions } = useQuestionBanks();
+const bankContext = computed(() => ({ teacherId: user.value?.uid, assignmentId: assignmentId.value, classLevel: kelasId, subject: selectedMapel.value, schoolName: schoolName.value, educationLevel: jenjang.value }));
 
 const mapelAjar = ref([]);
 const selectedMapel = ref("");
@@ -598,7 +605,6 @@ const levelKognitifOptions = ["C1 · Mengingat", "C2 · Memahami", "C3 · Menera
 const difficultyOptions = [{ value: "", label: "Belum dinilai" }, { value: "mudah", label: "Mudah" }, { value: "sedang", label: "Sedang" }, { value: "sulit", label: "Sulit" }];
 const selectedIds = ref([]);
 const bulkDifficulty = ref("");
-const retentionDays = ref(30);
 const formDraftStatus = ref("Draft otomatis aktif");
 let formDraftTimer;
 const questionDraftDocId = computed(() => `${user.value?.uid || "guru"}_${assignmentId.value}_${kelasId}_${String(selectedMapel.value || "mapel").replace(/[^a-zA-Z0-9_-]/g, "_")}_soal`);
@@ -636,12 +642,19 @@ const formSoal = ref({
 // State Modal Konfirmasi Hapus
 const showModalHapus = ref(false);
 const targetHapusSoal = ref(null);
+const deleteQuestionConfirmation = ref("");
 const showModalHapusSemua = ref(false);
+const deleteAllClassConfirmation = ref("");
+const deleteAllSubjectConfirmation = ref("");
+const deleteAllPassword = ref("");
 const deletingAll = ref(false);
-const jumlahSoalBisaDihapus = computed(() => daftarSoal.value.filter(soal => soal.status !== "sampah").length);
+const normalizeConfirmation = value => String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
+const singleDeleteConfirmed = computed(() => Boolean(targetHapusSoal.value) && normalizeConfirmation(deleteQuestionConfirmation.value) === normalizeConfirmation(targetHapusSoal.value?.pertanyaan));
+const deleteAllConfirmed = computed(() => deleteAllClassConfirmation.value === String(kelasId) && deleteAllSubjectConfirmation.value === selectedMapel.value && Boolean(deleteAllPassword.value));
+const jumlahSoalBisaDihapus = computed(() => daftarSoal.value.length);
 const overlayLoading = computed(() => {
   if (importingSpreadsheet.value) return { show: true, title: "Mengimpor bank soal", description: "Membaca file dan menyusun soal ke dalam kelas Anda." };
-  if (deletingAll.value) return { show: true, title: "Memindahkan soal", description: "Soal sedang dipindahkan dengan aman ke tempat sampah." };
+  if (deletingAll.value) return { show: true, title: "Menghapus soal", description: "Soal sedang dihapus permanen dari database." };
   if (isSubmitting.value) return { show: true, title: isEditMode.value ? "Memperbarui soal" : "Menyimpan soal baru", description: "Sedikit lagi, perubahan sedang disimpan ke bank soal." };
   if (loadingData.value) return { show: true, title: "Membuka bank soal", description: `Menyiapkan soal ${selectedMapel.value || "kelas"} untuk Anda.` };
   return { show: false, title: "", description: "" };
@@ -651,18 +664,11 @@ const overlayLoading = computed(() => {
 const stats = ref({ total: 0, pg: 0, essay: 0, belumDipakai: 0 });
 const loadStats = async () => {
   if (!user.value || !selectedMapel.value) return;
-  const baseConstraints = [
-    where("userId", "==", user.value.uid),
-    where("kelas", "==", Number(kelasId)),
-    where("mapel", "==", selectedMapel.value),
-    ...(assignmentId.value !== "legacy" ? [where("assignmentId", "==", assignmentId.value)] : []),
-    where("status", "==", "aktif"),
-  ];
   try {
     const [totalSnapshot, essaySnapshot, usedSnapshot] = await Promise.all([
-      getCountFromServer(query(collection(db, "soal"), ...baseConstraints)),
-      getCountFromServer(query(collection(db, "soal"), ...baseConstraints, where("tipe", "==", "essay"))),
-      getCountFromServer(query(collection(db, "soal"), ...baseConstraints, where("dipakai", "==", true))),
+      getCountFromServer(query(questionsRefFor(bankContext.value), where("status", "==", "aktif"))),
+      getCountFromServer(query(questionsRefFor(bankContext.value), where("status", "==", "aktif"), where("tipe", "==", "essay"))),
+      getCountFromServer(query(questionsRefFor(bankContext.value), where("status", "==", "aktif"), where("dipakai", "==", true))),
     ]);
     const total = totalSnapshot.data().count;
     const essay = essaySnapshot.data().count;
@@ -732,7 +738,6 @@ const loadPengaturanGuru = async () => {
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
       const data = docSnap.data();
-      retentionDays.value = data.privasi?.retentionDays || 30;
       const tugas = data.penugasan?.find((item) => item.id === assignmentId.value);
       mapelAjar.value = tugas?.mapelPerKelas?.[kelasId] || tugas?.mapelAjar || data.mapelAjar || [];
 
@@ -757,13 +762,10 @@ const loadSoal = async (append = false) => {
   if (append) loadingMore.value = true;
   else { loadingData.value = true; lastQuestionDoc.value = null; }
   try {
+    if (!append) await migrateLegacyQuestions(bankContext.value);
     if (!append) await loadStats();
     const constraints = [
-      collection(db, "soal"),
-      where("userId", "==", user.value.uid),
-      where("kelas", "==", Number(kelasId)),
-      where("mapel", "==", selectedMapel.value),
-      ...(assignmentId.value !== "legacy" ? [where("assignmentId", "==", assignmentId.value)] : []),
+      questionsRefFor(bankContext.value),
       orderBy(documentId()),
       ...(append && lastQuestionDoc.value ? [startAfter(lastQuestionDoc.value)] : []),
       limit(100),
@@ -774,9 +776,7 @@ const loadSoal = async (append = false) => {
       id: doc.id,
       ...doc.data(),
     }));
-    const sesuaiPenugasan = assignmentId.value === "legacy"
-      ? semuaSoal.filter((soal) => !soal.assignmentId || soal.assignmentId === "legacy")
-      : semuaSoal.filter((soal) => soal.assignmentId === assignmentId.value);
+    const sesuaiPenugasan = semuaSoal;
     const timestampValue = (value) => value?.toMillis?.() || (value?.seconds ? value.seconds * 1000 : new Date(value || 0).getTime()) || 0;
     const hasilTerurut = [...sesuaiPenugasan].sort((a, b) => timestampValue(b.createdAt || b.updatedAt) - timestampValue(a.createdAt || a.updatedAt));
     const hasilGabungan = append
@@ -974,7 +974,7 @@ const simpanSoal = async () => {
 
     let savedQuestion;
     if (isEditMode.value && editSoalId.value) {
-      await updateDoc(doc(db, "soal", editSoalId.value), dataPayload);
+      await updateDoc(questionRefFor(bankContext.value, editSoalId.value), dataPayload);
       const existingQuestion = daftarSoal.value.find((item) => item.id === editSoalId.value);
       savedQuestion = { ...existingQuestion, ...dataPayload, id: editSoalId.value };
       daftarSoal.value = daftarSoal.value.map((item) => item.id === editSoalId.value ? savedQuestion : item);
@@ -982,7 +982,10 @@ const simpanSoal = async () => {
       dataPayload.dipakai = false;
       dataPayload.jumlahDicetak = 0;
       dataPayload.createdAt = new Date();
-      const savedDocument = await addDoc(collection(db, "soal"), dataPayload);
+      await ensureBank(bankContext.value);
+      dataPayload.createdBy = user.value.uid;
+      dataPayload.bankId = bankIdFor(bankContext.value);
+      const savedDocument = await addDoc(questionsRefFor(bankContext.value), dataPayload);
       savedQuestion = { id: savedDocument.id, ...dataPayload };
       daftarSoal.value = [savedQuestion, ...daftarSoal.value.filter((item) => item.id !== savedDocument.id)];
     }
@@ -1006,53 +1009,80 @@ const simpanSoal = async () => {
 // Handler Konfirmasi Hapus
 const mintaKonfirmasiHapus = (soal) => {
   targetHapusSoal.value = soal;
+  deleteQuestionConfirmation.value = "";
   showModalHapus.value = true;
 };
 
+const tutupKonfirmasiHapus = () => {
+  showModalHapus.value = false;
+  targetHapusSoal.value = null;
+  deleteQuestionConfirmation.value = "";
+};
+
+const bukaKonfirmasiHapusSemua = () => {
+  deleteAllClassConfirmation.value = "";
+  deleteAllSubjectConfirmation.value = "";
+  deleteAllPassword.value = "";
+  showModalHapusSemua.value = true;
+};
+
+const tutupKonfirmasiHapusSemua = () => {
+  if (deletingAll.value) return;
+  showModalHapusSemua.value = false;
+  deleteAllClassConfirmation.value = "";
+  deleteAllSubjectConfirmation.value = "";
+  deleteAllPassword.value = "";
+};
+
 const eksekusiHapusSoal = async () => {
-  if (!targetHapusSoal.value) return;
+  if (!targetHapusSoal.value || !singleDeleteConfirmed.value) return;
   try {
-    await updateDoc(doc(db, "soal", targetHapusSoal.value.id), { status: "sampah", deletedAt: new Date(), updatedAt: new Date() });
-    await catatAktivitas("soal_dipindah_ke_sampah", { soalId: targetHapusSoal.value.id });
-    showModalHapus.value = false;
-    targetHapusSoal.value = null;
-    await loadSoal();
+    const deletedId = targetHapusSoal.value.id;
+    await deleteDoc(questionRefFor(bankContext.value, deletedId));
+    daftarSoal.value = daftarSoal.value.filter(soal => soal.id !== deletedId);
+    await loadStats();
+    await catatAktivitas("soal_dihapus_permanen", { soalId: deletedId });
+    tutupKonfirmasiHapus();
+    success("Soal berhasil dihapus permanen.");
   } catch (e) {
     console.error("Gagal menghapus soal:", e);
+    toastError("Soal gagal dihapus. Silakan coba lagi.");
   }
 };
 
 const hapusSemuaSoal = async () => {
-  const soalYangDihapus = daftarSoal.value.filter(soal => soal.status !== "sampah");
-  if (!soalYangDihapus.length || deletingAll.value) return;
+  if (!jumlahSoalBisaDihapus.value || !deleteAllConfirmed.value || deletingAll.value) return;
   deletingAll.value = true;
+  let passwordVerified = false;
   try {
-    const waktuHapus = new Date();
-    for (let awal = 0; awal < soalYangDihapus.length; awal += 500) {
+    await autentikasiUlang(deleteAllPassword.value);
+    passwordVerified = true;
+    const snapshot = await getDocs(questionsRefFor(bankContext.value));
+    for (let awal = 0; awal < snapshot.docs.length; awal += 400) {
       const batch = writeBatch(db);
-      soalYangDihapus.slice(awal, awal + 500).forEach(soal => batch.update(doc(db, "soal", soal.id), { status: "sampah", deletedAt: waktuHapus, updatedAt: waktuHapus }));
+      snapshot.docs.slice(awal, awal + 400).forEach(soal => batch.delete(soal.ref));
       await batch.commit();
     }
-    await catatAktivitas("semua_soal_dipindah_ke_sampah", { jumlah: soalYangDihapus.length, mapel: selectedMapel.value, kelas: Number(kelasId) });
+    await catatAktivitas("semua_soal_dihapus_permanen", { jumlah: snapshot.size, mapel: selectedMapel.value, kelas: Number(kelasId) });
     showModalHapusSemua.value = false;
+    deleteAllClassConfirmation.value = "";
+    deleteAllSubjectConfirmation.value = "";
+    deleteAllPassword.value = "";
     selectedIds.value = [];
-    await loadSoal();
-    success(`${soalYangDihapus.length} soal berhasil dipindahkan ke sampah.`);
+    daftarSoal.value = [];
+    await loadStats();
+    success(`${snapshot.size} soal berhasil dihapus permanen.`);
   } catch (error) {
     console.error("Gagal menghapus semua soal:", error);
-    toastError("Gagal menghapus semua soal. Silakan coba lagi.");
+    deleteAllPassword.value = "";
+    toastError(!passwordVerified ? "Kata sandi tidak sesuai. Tidak ada soal yang dihapus." : "Proses penghapusan tidak selesai. Muat ulang halaman untuk memeriksa data yang tersisa.");
   } finally { deletingAll.value = false; }
 };
 
-const pulihkanSoal = async soal => {
-  await updateDoc(doc(db, "soal", soal.id), { status: "aktif", deletedAt: null, updatedAt: new Date() });
-  await catatAktivitas("soal_dipulihkan", { soalId: soal.id });
-  await loadSoal();
-};
 const updateMassal = async perubahan => {
   if (!selectedIds.value.length) return;
   const batch = writeBatch(db);
-  selectedIds.value.forEach(id => batch.update(doc(db, "soal", id), { ...perubahan, updatedAt: new Date() }));
+  selectedIds.value.forEach(id => batch.update(questionRefFor(bankContext.value, id), { ...perubahan, updatedAt: new Date() }));
   await batch.commit();
   await catatAktivitas("soal_diubah_massal", { jumlah: selectedIds.value.length, perubahan });
   selectedIds.value = [];
@@ -1101,7 +1131,7 @@ const importCsvText = async (text) => {
   const rows = parseCsv(text); const headers = rows.shift()?.map(h => h.trim().replace(/^\ufeff/, ""));
   if (!headers || !requiredCsvHeader.every(h => headers.includes(h))) throw new Error("Format kolom tidak sesuai template");
   let imported = 0;
-  for (const row of rows) { const data = Object.fromEntries(headers.map((h, i) => [h, row[i]?.trim() || ""])); if (!data.pertanyaan) continue; const tipe = data.tipe.toLowerCase() === "essay" ? "essay" : "pg"; await addDoc(collection(db, "soal"), { userId: user.value.uid, kelas: Number(kelasId), mapel: selectedMapel.value, assignmentId: assignmentId.value, jenjang: jenjang.value, namaSekolah: schoolName.value, tipe, ...metadataImport(data), pertanyaan: data.pertanyaan, imageUrl: "", opsi: tipe === "pg" ? { a: data.opsiA, b: data.opsiB, c: data.opsiC, d: data.opsiD } : null, opsiGambar: null, kunciJawaban: tipe === "pg" ? data.kunciJawaban.toLowerCase() : data.kunciJawaban, dipakai: false, jumlahDicetak: 0, createdAt: new Date(), updatedAt: new Date() }); imported++; }
+  await ensureBank(bankContext.value); for (const row of rows) { const data = Object.fromEntries(headers.map((h, i) => [h, row[i]?.trim() || ""])); if (!data.pertanyaan) continue; const tipe = data.tipe.toLowerCase() === "essay" ? "essay" : "pg"; await addDoc(questionsRefFor(bankContext.value), { userId: user.value.uid, createdBy: user.value.uid, bankId: bankIdFor(bankContext.value), kelas: Number(kelasId), mapel: selectedMapel.value, assignmentId: assignmentId.value, jenjang: jenjang.value, namaSekolah: schoolName.value, tipe, ...metadataImport(data), pertanyaan: data.pertanyaan, imageUrl: "", opsi: tipe === "pg" ? { a: data.opsiA, b: data.opsiB, c: data.opsiC, d: data.opsiD } : null, opsiGambar: null, kunciJawaban: tipe === "pg" ? data.kunciJawaban.toLowerCase() : data.kunciJawaban, dipakai: false, jumlahDicetak: 0, createdAt: new Date(), updatedAt: new Date() }); imported++; }
   return imported;
 };
 const importCsv = async (event) => {
@@ -1141,7 +1171,7 @@ const importSpreadsheet = async (event) => {
     const headers = sheet.getRow(1).values.slice(1).map(value => String(value || '').trim()); if (!requiredCsvHeader.every(key => headers.includes(key))) throw new Error('Format kolom tidak sesuai template');
     const dataRows = []; sheet.eachRow((row, number) => { if (number === 1) return; const data = {}; headers.forEach((header, index) => { data[header] = row.getCell(index + 1).text || ''; }); if (String(data.pertanyaan || '').trim()) dataRows.push(data); });
     let imported = 0;
-    for (const data of dataRows) { if (!String(data.pertanyaan).trim()) continue; const tipe = String(data.tipe).toLowerCase() === 'essay' ? 'essay' : 'pg'; await addDoc(collection(db, 'soal'), { userId: user.value.uid, kelas: Number(kelasId), mapel: selectedMapel.value, assignmentId: assignmentId.value, jenjang: jenjang.value, namaSekolah: schoolName.value, tipe, ...metadataImport(data), pertanyaan: String(data.pertanyaan).trim(), imageUrl: '', opsi: tipe === 'pg' ? { a: String(data.opsiA), b: String(data.opsiB), c: String(data.opsiC), d: String(data.opsiD) } : null, opsiGambar: null, kunciJawaban: tipe === 'pg' ? String(data.kunciJawaban).toLowerCase() : String(data.kunciJawaban || ''), dipakai: false, jumlahDicetak: 0, createdAt: new Date(), updatedAt: new Date() }); imported++; }
+    await ensureBank(bankContext.value); for (const data of dataRows) { if (!String(data.pertanyaan).trim()) continue; const tipe = String(data.tipe).toLowerCase() === 'essay' ? 'essay' : 'pg'; await addDoc(questionsRefFor(bankContext.value), { userId: user.value.uid, createdBy: user.value.uid, bankId: bankIdFor(bankContext.value), kelas: Number(kelasId), mapel: selectedMapel.value, assignmentId: assignmentId.value, jenjang: jenjang.value, namaSekolah: schoolName.value, tipe, ...metadataImport(data), pertanyaan: String(data.pertanyaan).trim(), imageUrl: '', opsi: tipe === 'pg' ? { a: String(data.opsiA), b: String(data.opsiB), c: String(data.opsiC), d: String(data.opsiD) } : null, opsiGambar: null, kunciJawaban: tipe === 'pg' ? String(data.kunciJawaban).toLowerCase() : String(data.kunciJawaban || ''), dipakai: false, jumlahDicetak: 0, createdAt: new Date(), updatedAt: new Date() }); imported++; }
     await loadSoal(); success(`${imported} soal berhasil diimpor dari Excel.`);
   } catch (error) { console.error(error); toastError(`Import Excel gagal: ${error.message}`); } finally { event.target.value = ''; importingSpreadsheet.value = false; }
 };

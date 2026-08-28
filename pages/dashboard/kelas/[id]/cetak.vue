@@ -417,6 +417,8 @@ const printSteps = [
 ];
 const mapelAjar = ref([]);
 const selectedMapel = ref(route.query.mapel || "");
+const { bankIdFor, questionsRefFor, questionRefFor, migrateLegacyQuestions } = useQuestionBanks();
+const bankContext = computed(() => ({ teacherId: user.value?.uid, assignmentId: assignmentId.value, classLevel: kelasId, subject: selectedMapel.value, schoolName: schoolName.value, educationLevel: jenjang.value }));
 const listSoalPG = ref([]);
 const listSoalEssay = ref([]);
 
@@ -588,18 +590,13 @@ const filteredListEssay = computed(() => {
 const loadSoal = async () => {
   if (!user.value || !selectedMapel.value) return;
   try {
+    await migrateLegacyQuestions(bankContext.value);
     const q = query(
-      collection(db, "soal"),
-      where("userId", "==", user.value.uid),
-      where("kelas", "==", kelasId),
-      where("mapel", "==", selectedMapel.value),
+      questionsRefFor(bankContext.value),
       limit(300),
     );
     const snap = await getDocs(q);
-    const fetched = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-    const all = (assignmentId.value === "legacy"
-      ? fetched.filter((soal) => !soal.assignmentId || soal.assignmentId === "legacy")
-      : fetched.filter((soal) => soal.assignmentId === assignmentId.value)).filter(soal => (soal.status || "aktif") === "aktif");
+    const all = snap.docs.map((d) => ({ id: d.id, bankId: bankIdFor(bankContext.value), ...d.data() })).filter(soal => (soal.status || "aktif") === "aktif");
     listSoalPG.value = all.filter((s) => s.tipe !== "essay");
     listSoalEssay.value = all.filter((s) => s.tipe === "essay");
   } catch (e) {
@@ -727,7 +724,7 @@ const bukaKertasCetak = async (mode = "A") => {
   try {
     const ids = [...terpilihPG.value, ...terpilihEssay.value];
     const updatePromises = ids.map((id) =>
-      updateDoc(doc(db, "soal", id), {
+      updateDoc(questionRefFor(bankContext.value, id), {
         dipakai: true,
         jumlahDicetak: increment(1),
         riwayatPenggunaan: arrayUnion(new Date()),
