@@ -20,12 +20,14 @@
           <!-- Toggle Dark Mode -->
           <button 
             @click="toggleDarkMode" 
-            class="grid h-9 w-9 place-items-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:border-brand-200 hover:bg-brand-50 hover:text-brand-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
-            title="Ubah Mode Tampilan"
-            aria-label="Ubah mode tampilan"
+            class="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 dark:border-slate-700 dark:bg-slate-900 dark:text-amber-300 dark:hover:bg-slate-800"
+            :title="isDark ? 'Gunakan mode terang' : 'Gunakan mode gelap'"
+            :aria-label="isDark ? 'Gunakan mode terang' : 'Gunakan mode gelap'"
           >
-            <AppIcon v-if="colorMode.value === 'dark'" name="sun" class="h-4 w-4" />
-            <AppIcon v-else name="moon" class="h-4 w-4" />
+            <ClientOnly>
+              <AppIcon :name="isDark ? 'sun' : 'moon'" class="h-5 w-5" />
+              <template #fallback><AppIcon name="moon" class="h-5 w-5" /></template>
+            </ClientOnly>
           </button>
 
           <!-- User Profile & Logout -->
@@ -58,6 +60,7 @@
 const colorMode = useColorMode()
 const { user, logout } = useAuth()
 const route = useRoute()
+const isDark = computed(() => colorMode.value === 'dark')
 
 const userInitial = computed(() => user.value?.email?.charAt(0) || 'G')
 
@@ -79,6 +82,6 @@ const mobileNavClass = (path, includeChildren = false) => [
 ]
 
 const toggleDarkMode = () => {
-  colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'
+  colorMode.preference = isDark.value ? 'light' : 'dark'
 }
 </script>
